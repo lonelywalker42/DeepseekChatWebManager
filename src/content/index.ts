@@ -11,6 +11,7 @@ import {
   injectScraperUI,
   showNotification,
   showConflictPrompt,
+  showTopicSelector,
 } from './scraper-ui';
 
 // Inline sendMessage to avoid shared dependency with background script
@@ -128,6 +129,51 @@ async function handleScrapeAll(): Promise<void> {
     const response = await sendMessage({ type: 'SCRAPE_SESSION', payload: data });
 
     if (response.ok) {
+      // Session saved to Uncategorized — let user pick a topic
+      const savedSession = response.data as ContentSession | undefined;
+      const sessionId = savedSession?.id;
+
+      const topicChoice = await showTopicSelector();
+
+      if (topicChoice.kind === 'skip') {
+        showNotification(
+          `Saved "${data.title}" with ${data.messages.length} messages.`,
+          'success',
+        );
+        return;
+      }
+
+      let targetTopicId: string;
+
+      if (topicChoice.kind === 'create') {
+        // Create new topic first
+        const createTopicResp = await sendMessage({
+          type: 'CREATE_TOPIC',
+          payload: {
+            title: topicChoice.title,
+            type: 'other',
+            status: 'active',
+            tags: [],
+            progressSummary: '',
+          },
+        });
+        if (!createTopicResp.ok) {
+          showNotification(`Failed to create topic: ${createTopicResp.error}`, 'error');
+          return;
+        }
+        targetTopicId = (createTopicResp.data as { id: string }).id;
+      } else {
+        targetTopicId = topicChoice.topicId;
+      }
+
+      // Move session to the selected topic
+      if (sessionId) {
+        await sendMessage({
+          type: 'UPDATE_SESSION',
+          payload: { id: sessionId, changes: { topicId: targetTopicId } },
+        });
+      }
+
       showNotification(
         `Saved "${data.title}" with ${data.messages.length} messages.`,
         'success',

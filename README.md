@@ -77,7 +77,7 @@ DeepseekManager/
 ├── postcss.config.js
 ├── src/
 │   ├── background/
-│   │   ├── index.ts                       # Service worker entry
+│   │   ├── service-worker.ts              # Service worker entry
 │   │   └── message-router.ts              # Message dispatcher (18 types)
 │   ├── content/
 │   │   ├── index.ts                       # Content script entry
@@ -173,11 +173,73 @@ npm run build
 
 #### Usage
 
-1. Navigate to `chat.deepseek.com` and start a conversation
-2. Click the floating brain icon (bottom-right) to scrape the conversation
-3. Click the extension icon in the toolbar, then "Open Manager"
-4. Create topics and organize your scraped sessions
-5. Use templates and continuation prompts to maintain context across sessions
+##### 1. Scraping Conversations
+
+1. Navigate to `chat.deepseek.com` and open any conversation
+2. A floating brain icon (🧠) appears in the bottom-right corner of the page
+3. Click the brain icon to expand the menu with two options:
+   - **Scrape All** — Extracts the entire conversation (all messages)
+   - **Scrape Summary** — Extracts only the last assistant message as a summary
+4. After clicking "Scrape All", a **Topic Selector** dialog appears:
+   - Select an existing topic from the list to save the session under it
+   - Type a new topic name and click "Create" to create a new topic on the fly
+   - Click "Skip (Uncategorized)" to save without assigning a topic
+5. If the same URL was already scraped, a conflict dialog offers:
+   - **Update Existing** — Overwrites the old session with new data
+   - **Create New** — Creates a duplicate session
+   - **Cancel** — Abort the scrape
+
+##### 2. Managing Topics
+
+1. Click the extension icon in the toolbar, then click **"Open Manager"**
+2. The Topic List page shows all your topics with filters:
+   - Filter by **Status**: Active / Completed / Archived
+   - Filter by **Type**: Idea Discussion / Code Generation / Knowledge QA / Other
+   - Search by keyword
+3. Click **"New Topic"** to create a topic manually (title, type, status, tags)
+4. Click any topic card to open the **Topic Detail** page:
+   - View all sessions under this topic
+   - Create manual sessions (for non-DeepSeek conversations)
+   - Edit the progress summary (Markdown supported)
+   - Set parent-child relationships between sessions
+
+##### 3. Viewing Sessions
+
+1. In the Topic Detail page, click any session to open **Session Detail**
+2. The session page shows:
+   - Full message history with role-colored display (user vs assistant)
+   - Markdown rendering for assistant messages
+   - Editable session title and summary
+   - Session metadata (URL, creation date)
+3. Use the **Session Timeline** to visualize parent-child session chains
+
+##### 4. Generating Continuation Prompts
+
+1. In the Template Manager page, create summary templates with variables:
+   - `{topic_title}` — Topic name
+   - `{topic_type}` — Topic type
+   - `{progress_summary}` — Aggregated progress
+   - `{session_title}` — Current session title
+   - `{session_summary}` — Current session summary
+   - `{session_count}` — Number of sessions in the topic
+2. In Topic Detail or Session Detail, click **"Generate Continuation Prompt"**
+3. The prompt is generated using your template and copied to clipboard
+4. Paste it into a new DeepSeek conversation to maintain context
+
+##### 5. Searching & Exporting
+
+1. Use the **Search** page to find messages across all sessions
+2. Export a single topic as formatted Markdown via the **Export** page
+3. Export the entire database as JSON for backup
+4. Import a previously exported JSON file to restore data
+
+##### 6. Settings
+
+1. Open the **Settings** page from the sidebar
+2. **DOM Selectors**: View and customize the CSS selectors used for scraping
+   - Click "Reset to Defaults" to restore built-in selectors
+3. **Error Log**: View the last 50 error entries with timestamps
+4. **Danger Zone**: Clear all data (requires double confirmation)
 
 ### Data Model
 
@@ -353,7 +415,7 @@ DeepseekManager/
 ├── postcss.config.js
 ├── src/
 │   ├── background/
-│   │   ├── index.ts                       # Service Worker 入口
+│   │   ├── service-worker.ts              # Service Worker 入口
 │   │   └── message-router.ts              # 消息分发器（18 种消息类型）
 │   ├── content/
 │   │   ├── index.ts                       # 内容脚本入口
@@ -449,11 +511,73 @@ npm run build
 
 #### 使用方法
 
-1. 访问 `chat.deepseek.com` 并开始对话
-2. 点击页面右下角的浮动大脑图标抓取对话
-3. 点击工具栏中的扩展图标，然后点击"打开管理器"
-4. 创建主题并组织已抓取的会话
-5. 使用模板和延续提示词在不同会话间保持上下文
+##### 1. 抓取对话
+
+1. 访问 `chat.deepseek.com` 并打开任意对话
+2. 页面右下角会出现浮动大脑图标（🧠）
+3. 点击大脑图标展开菜单，有两个选项：
+   - **Scrape All** — 提取整个对话（所有消息）
+   - **Scrape Summary** — 仅提取最后一条助手消息作为摘要
+4. 点击 "Scrape All" 后，弹出**主题选择器**对话框：
+   - 从列表中选择一个已有主题，将会话保存到该主题下
+   - 输入新主题名称并点击 "Create"，即时创建新主题
+   - 点击 "Skip (Uncategorized)" 跳过主题分配，保存为未分类
+5. 如果同一 URL 已被抓取过，会弹出冲突对话框：
+   - **Update Existing** — 用新数据覆盖旧会话
+   - **Create New** — 创建一个重复的新会话
+   - **Cancel** — 取消本次抓取
+
+##### 2. 管理主题
+
+1. 点击工具栏中的扩展图标，然后点击 **"Open Manager"**
+2. 主题列表页面展示所有主题，支持筛选：
+   - 按**状态**筛选：进行中 / 已完成 / 已归档
+   - 按**类型**筛选：想法讨论 / 代码生成 / 知识问答 / 其他
+   - 关键字搜索
+3. 点击 **"New Topic"** 手动创建主题（标题、类型、状态、标签）
+4. 点击任意主题卡片进入**主题详情**页面：
+   - 查看该主题下的所有会话
+   - 手动创建会话（用于非 DeepSeek 来源的对话）
+   - 编辑进度总结（支持 Markdown）
+   - 设置会话间的父子关系
+
+##### 3. 查看会话
+
+1. 在主题详情页面中，点击任意会话进入**会话详情**页面
+2. 会话页面展示：
+   - 完整的消息历史，角色着色显示（用户 vs 助手）
+   - 助手消息的 Markdown 渲染
+   - 可编辑的会话标题和摘要
+   - 会话元数据（URL、创建时间）
+3. 使用**会话时间线**可视化父子会话链
+
+##### 4. 生成延续提示词
+
+1. 在模板管理页面中，创建包含变量的总结模板：
+   - `{topic_title}` — 主题名称
+   - `{topic_type}` — 主题类型
+   - `{progress_summary}` — 汇总的进度
+   - `{session_title}` — 当前会话标题
+   - `{session_summary}` — 当前会话摘要
+   - `{session_count}` — 主题下的会话数量
+2. 在主题详情或会话详情页面中，点击 **"Generate Continuation Prompt"**
+3. 系统使用你的模板生成提示词并自动复制到剪贴板
+4. 粘贴到新的 DeepSeek 对话中，保持上下文连贯
+
+##### 5. 搜索与导出
+
+1. 使用**搜索**页面在所有会话中查找消息
+2. 通过**导出**页面将单个主题导出为格式化的 Markdown 文件
+3. 将整个数据库导出为 JSON 用于备份
+4. 导入之前导出的 JSON 文件以恢复数据
+
+##### 6. 设置
+
+1. 从侧边栏打开**设置**页面
+2. **DOM 选择器**：查看和自定义抓取使用的 CSS 选择器
+   - 点击 "Reset to Defaults" 恢复内置选择器
+3. **错误日志**：查看最近 50 条带时间戳的错误记录
+4. **危险区域**：清除所有数据（需二次确认）
 
 ### 数据模型
 

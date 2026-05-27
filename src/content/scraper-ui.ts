@@ -131,8 +131,8 @@ function injectStyles(): void {
       color: #fef3c7;
     }
 
-    /* --- Conflict prompt overlay --- */
-    #dsm-conflict-overlay {
+    /* --- Dialog overlay (shared by conflict + topic selector) --- */
+    .dsm-overlay {
       position: fixed;
       inset: 0;
       z-index: 2147483647;
@@ -143,7 +143,7 @@ function injectStyles(): void {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    #dsm-conflict-dialog {
+    .dsm-dialog {
       background: #1f2937;
       color: #f9fafb;
       border-radius: 14px;
@@ -153,26 +153,26 @@ function injectStyles(): void {
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     }
 
-    #dsm-conflict-dialog h3 {
+    .dsm-dialog h3 {
       margin: 0 0 10px 0;
       font-size: 16px;
       font-weight: 700;
     }
 
-    #dsm-conflict-dialog p {
+    .dsm-dialog p {
       margin: 0 0 20px 0;
       font-size: 13px;
       color: #d1d5db;
       line-height: 1.5;
     }
 
-    #dsm-conflict-actions {
+    .dsm-dialog-actions {
       display: flex;
       gap: 10px;
       justify-content: flex-end;
     }
 
-    .dsm-conflict-btn {
+    .dsm-dialog-btn {
       padding: 8px 18px;
       border: none;
       border-radius: 8px;
@@ -182,28 +182,92 @@ function injectStyles(): void {
       transition: background 0.15s ease;
     }
 
-    #dsm-conflict-update {
+    .dsm-btn-primary {
       background: #2563eb;
       color: #fff;
     }
-    #dsm-conflict-update:hover {
+    .dsm-btn-primary:hover {
       background: #1d4ed8;
     }
 
-    #dsm-conflict-new {
+    .dsm-btn-secondary {
       background: #4b5563;
       color: #f9fafb;
     }
-    #dsm-conflict-new:hover {
+    .dsm-btn-secondary:hover {
       background: #374151;
     }
 
-    #dsm-conflict-cancel {
+    .dsm-btn-cancel {
       background: transparent;
       color: #9ca3af;
     }
-    #dsm-conflict-cancel:hover {
+    .dsm-btn-cancel:hover {
       color: #d1d5db;
+    }
+
+    /* --- Topic selector specific --- */
+    #dsm-topic-overlay .dsm-dialog {
+      max-width: 460px;
+    }
+
+    .dsm-topic-list {
+      max-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+    }
+
+    .dsm-topic-item {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+      border: none;
+      background: transparent;
+      color: #f9fafb;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      border-bottom: 1px solid #374151;
+      transition: background 0.12s ease;
+    }
+    .dsm-topic-item:last-child {
+      border-bottom: none;
+    }
+    .dsm-topic-item:hover {
+      background: #374151;
+    }
+    .dsm-topic-item.dsm-selected {
+      background: #1e40af;
+    }
+    .dsm-topic-item-type {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-left: 8px;
+    }
+
+    .dsm-new-topic-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .dsm-new-topic-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #4b5563;
+      border-radius: 8px;
+      background: #111827;
+      color: #f9fafb;
+      font-size: 13px;
+      outline: none;
+    }
+    .dsm-new-topic-input:focus {
+      border-color: #2563eb;
+    }
+    .dsm-new-topic-input::placeholder {
+      color: #6b7280;
     }
   `;
 
@@ -253,23 +317,22 @@ type ConflictChoice = 'update' | 'new' | 'cancel';
  */
 export function showConflictPrompt(existingTitle: string): Promise<ConflictChoice> {
   return new Promise((resolve) => {
-    // Remove any previous overlay
-    document.getElementById('dsm-conflict-overlay')?.remove();
+    document.querySelectorAll('.dsm-overlay').forEach((el) => el.remove());
 
     const overlay = document.createElement('div');
-    overlay.id = 'dsm-conflict-overlay';
+    overlay.className = 'dsm-overlay';
 
     const dialog = document.createElement('div');
-    dialog.id = 'dsm-conflict-dialog';
+    dialog.className = 'dsm-dialog';
 
     dialog.innerHTML = `
       <h3>Session Already Exists</h3>
       <p>A session with this URL is already saved as "<strong>${escapeHtml(existingTitle)}</strong>".
          Would you like to update it with the new data, or create a new session?</p>
-      <div id="dsm-conflict-actions">
-        <button id="dsm-conflict-cancel" class="dsm-conflict-btn">Cancel</button>
-        <button id="dsm-conflict-new" class="dsm-conflict-btn">Create New</button>
-        <button id="dsm-conflict-update" class="dsm-conflict-btn">Update Existing</button>
+      <div class="dsm-dialog-actions">
+        <button data-choice="cancel" class="dsm-dialog-btn dsm-btn-cancel">Cancel</button>
+        <button data-choice="new" class="dsm-dialog-btn dsm-btn-secondary">Create New</button>
+        <button data-choice="update" class="dsm-dialog-btn dsm-btn-primary">Update Existing</button>
       </div>
     `;
 
@@ -281,20 +344,119 @@ export function showConflictPrompt(existingTitle: string): Promise<ConflictChoic
       resolve(choice);
     }
 
-    dialog
-      .querySelector('#dsm-conflict-update')!
-      .addEventListener('click', () => cleanup('update'));
-    dialog
-      .querySelector('#dsm-conflict-new')!
-      .addEventListener('click', () => cleanup('new'));
-    dialog
-      .querySelector('#dsm-conflict-cancel')!
-      .addEventListener('click', () => cleanup('cancel'));
+    dialog.querySelectorAll('[data-choice]').forEach((btn) => {
+      btn.addEventListener('click', () => cleanup(btn.getAttribute('data-choice') as ConflictChoice));
+    });
 
-    // Clicking the backdrop also cancels
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) cleanup('cancel');
     });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Topic selector
+// ---------------------------------------------------------------------------
+
+interface TopicInfo {
+  id: string;
+  title: string;
+  type: string;
+}
+
+type TopicChoice = { kind: 'select'; topicId: string } | { kind: 'create'; title: string } | { kind: 'skip' };
+
+/**
+ * Show a modal letting the user pick which topic to save the scraped session to.
+ * Fetches existing topics from the background, allows selecting one or creating new.
+ */
+export function showTopicSelector(): Promise<TopicChoice> {
+  return new Promise(async (resolve) => {
+    // Fetch topics from background
+    let topics: TopicInfo[] = [];
+    try {
+      const resp = await chrome.runtime.sendMessage({ type: 'GET_TOPICS' });
+      if (resp?.ok && Array.isArray(resp.data)) {
+        topics = resp.data.filter((t: TopicInfo) => t.id !== '__uncategorized__');
+      }
+    } catch {
+      // If fetch fails, just show empty list
+    }
+
+    document.querySelectorAll('.dsm-overlay').forEach((el) => el.remove());
+
+    const overlay = document.createElement('div');
+    overlay.className = 'dsm-overlay';
+    overlay.id = 'dsm-topic-overlay';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'dsm-dialog';
+
+    const topicItemsHtml = topics.length > 0
+      ? topics.map((t) => `
+        <button class="dsm-topic-item" data-topic-id="${escapeHtml(t.id)}">
+          ${escapeHtml(t.title)}
+          <span class="dsm-topic-item-type">${escapeHtml(t.type)}</span>
+        </button>
+      `).join('')
+      : '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:13px;">No topics yet. Create one below.</div>';
+
+    dialog.innerHTML = `
+      <h3>Save to Topic</h3>
+      <p>Choose a topic for this conversation, or create a new one.</p>
+      <div class="dsm-topic-list">${topicItemsHtml}</div>
+      <div class="dsm-new-topic-row">
+        <input class="dsm-new-topic-input" type="text" placeholder="New topic name..." id="dsm-new-topic-name" />
+        <button class="dsm-dialog-btn dsm-btn-primary" id="dsm-create-topic-btn">Create</button>
+      </div>
+      <div class="dsm-dialog-actions">
+        <button class="dsm-dialog-btn dsm-btn-cancel" id="dsm-topic-skip">Skip (Uncategorized)</button>
+      </div>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    const input = dialog.querySelector('#dsm-new-topic-name') as HTMLInputElement;
+    const createBtn = dialog.querySelector('#dsm-create-topic-btn')!;
+    const skipBtn = dialog.querySelector('#dsm-topic-skip')!;
+
+    function cleanup(result: TopicChoice) {
+      overlay.remove();
+      resolve(result);
+    }
+
+    // Select existing topic
+    dialog.querySelectorAll('.dsm-topic-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        const topicId = item.getAttribute('data-topic-id')!;
+        cleanup({ kind: 'select', topicId });
+      });
+    });
+
+    // Create new topic
+    function handleCreate() {
+      const title = input.value.trim();
+      if (title) {
+        cleanup({ kind: 'create', title });
+      }
+    }
+
+    createBtn.addEventListener('click', handleCreate);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleCreate();
+    });
+
+    // Skip
+    skipBtn.addEventListener('click', () => cleanup({ kind: 'skip' }));
+
+    // Click backdrop to skip
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) cleanup({ kind: 'skip' });
+    });
+
+    // Focus the input
+    setTimeout(() => input.focus(), 100);
   });
 }
 
