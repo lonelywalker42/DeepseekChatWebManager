@@ -34,7 +34,7 @@ export async function handleMessage(
       case 'SCRAPE_SESSION': {
         const existing = await sessionDao.getSessionByUrl(request.payload.sourceUrl);
         if (existing) {
-          return { conflict: true, existingSession: existing };
+          return { ok: false, error: 'Session URL already exists', conflict: true, existingSession: existing };
         }
         const topicId = request.payload.topicId ?? UNCATEGORIZED_TOPIC_ID;
         if (!request.payload.topicId) {

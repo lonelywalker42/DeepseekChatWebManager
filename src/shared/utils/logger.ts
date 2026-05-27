@@ -17,7 +17,7 @@ export function logError(message: string, details?: unknown): void {
   };
 
   try {
-    chrome.storage.local.get(STORAGE_KEY, (result) => {
+    chrome.storage.local.get(STORAGE_KEY, (result: Record<string, LogEntry[]>) => {
       const log: LogEntry[] = result[STORAGE_KEY] || [];
       log.unshift(entry);
       // Keep only the last MAX_ENTRIES

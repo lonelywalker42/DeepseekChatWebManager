@@ -26,8 +26,8 @@ export type MessageRequest =
 // Response types
 export type MessageResponse<T = unknown> =
   | { ok: true; data: T }
-  | { ok: false; error: string }
-  | { conflict: true; existingSession: Session };
+  | { ok: false; error: string; conflict?: false }
+  | { ok: false; error: string; conflict: true; existingSession: Session };
 
 // Send a message to the background service worker
 export async function sendMessage<T = unknown>(msg: MessageRequest): Promise<MessageResponse<T>> {

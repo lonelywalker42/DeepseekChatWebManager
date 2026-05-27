@@ -12,8 +12,27 @@ import {
   showNotification,
   showConflictPrompt,
 } from './scraper-ui';
-import { sendMessage } from '../shared/messaging';
-import type { Session } from '../shared/types';
+
+// Inline sendMessage to avoid shared dependency with background script
+// (shared imports cause @crxjs to bundle content + background together)
+interface ContentSession {
+  id: string;
+  topicId: string;
+  title: string;
+  sourceUrl: string;
+}
+
+interface ContentResponse {
+  ok: boolean;
+  error?: string;
+  conflict?: boolean;
+  existingSession?: ContentSession;
+  data?: unknown;
+}
+
+async function sendMessage(msg: Record<string, unknown>): Promise<ContentResponse> {
+  return chrome.runtime.sendMessage(msg);
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -117,7 +136,7 @@ async function handleScrapeAll(): Promise<void> {
     }
 
     if ('conflict' in response && response.conflict) {
-      const existing = response.existingSession as Session;
+      const existing = response.existingSession as ContentSession;
       const choice = await showConflictPrompt(existing.title);
 
       if (choice === 'cancel') {
