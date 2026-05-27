@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "DeepSeekChat Manager",
+  "version": "0.1.0",
+  "description": "Manage and organize your DeepSeek conversations into topics",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["*://chat.deepseek.com/*"],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://chat.deepseek.com/*"],
+      "js": ["src/content/index.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "src/assets/icon16.png",
+      "48": "src/assets/icon48.png",
+      "128": "src/assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "src/assets/icon16.png",
+    "48": "src/assets/icon48.png",
+    "128": "src/assets/icon128.png"
+  }
+}
