@@ -49,28 +49,57 @@ function queryAll(root: ParentNode, selector: string): Element[] {
 
 /**
  * Determine whether `el` is (or is inside) a user-message container.
+ *
+ * DeepSeek DOM: user messages are `.ds-message` elements that do NOT
+ * contain `.ds-assistant-message-main-content`.
  */
 function isUserMessage(el: Element, selectors: SelectorMap): boolean {
+  // Primary: if the element contains assistant content, it's NOT a user message
+  if (el.querySelector('.ds-assistant-message-main-content')) return false;
+
+  // Check for assistant content in reverse — if found, it's assistant
+  if (isAssistantMessage(el, selectors)) return false;
+
+  // Fallback: check user-specific selectors
   const userSelParts = selectors.userMessage.split(',').map((s) => s.trim());
   for (const part of userSelParts) {
-    // Check the element itself and any ancestor up to the messageItem
-    if (el.matches(part)) return true;
-    if (el.closest(part)) return true;
+    try {
+      if (el.matches(part)) return true;
+      if (el.closest(part)) return true;
+    } catch {
+      // :has() may throw in some contexts; ignore
+    }
   }
+
+  // If the element has class "ds-message" and no assistant content, treat as user
+  if (el.classList.contains('ds-message')) return true;
+
   return false;
 }
 
 /**
  * Determine whether `el` is (or is inside) an assistant-message container.
+ *
+ * DeepSeek DOM: assistant messages contain `.ds-assistant-message-main-content`.
  */
 function isAssistantMessage(el: Element, selectors: SelectorMap): boolean {
+  // Primary: check for the assistant content marker
+  if (el.querySelector('.ds-assistant-message-main-content')) return true;
+  if (el.querySelector('.ds-markdown.ds-assistant-message-main-content')) return true;
+
+  // Fallback: check assistant-specific selectors
   const asstSelParts = selectors.assistantMessage
     .split(',')
     .map((s) => s.trim());
   for (const part of asstSelParts) {
-    if (el.matches(part)) return true;
-    if (el.closest(part)) return true;
+    try {
+      if (el.matches(part)) return true;
+      if (el.closest(part)) return true;
+    } catch {
+      // :has() may throw in some contexts; ignore
+    }
   }
+
   return false;
 }
 
@@ -78,11 +107,27 @@ function isAssistantMessage(el: Element, selectors: SelectorMap): boolean {
  * Extract the visible text content from a message element.
  */
 function extractContent(msgEl: Element, selectors: SelectorMap): string {
+  // For assistant messages: use the specific ds-markdown content element
+  const assistantContent = msgEl.querySelector(
+    '.ds-markdown.ds-assistant-message-main-content',
+  );
+  if (assistantContent) {
+    return (assistantContent as HTMLElement).innerText.trim();
+  }
+
+  // For user messages: the content is in a direct child div (hash class).
+  // Try the configured selectors first.
   const contentEl = queryFirst(msgEl, selectors.messageContent);
-  if (contentEl) {
+  if (contentEl && contentEl !== msgEl) {
     return (contentEl as HTMLElement).innerText.trim();
   }
-  // Fallback: use the whole element's text
+
+  // Fallback: for user messages, grab the first child div's text
+  if (msgEl.children.length === 1 && msgEl.children[0] instanceof HTMLDivElement) {
+    return (msgEl.children[0] as HTMLElement).innerText.trim();
+  }
+
+  // Last resort: use the whole element's text
   return (msgEl as HTMLElement).innerText.trim();
 }
 

@@ -25,53 +25,58 @@ export interface SelectorMap {
 }
 
 export const DEFAULT_SELECTORS: SelectorMap = {
-  // DeepSeek wraps the entire conversation in a scrollable div.
-  // Multiple candidate selectors; the first one that matches will be used.
+  // DeepSeek uses a virtual list as the scrollable message container.
+  // The actual visible items are nested: .ds-virtual-list > .ds-virtual-list-items > .ds-virtual-list-visible-items
   messageContainer:
-    '[class*="conversation"]' +
+    '.ds-virtual-list' +
+    ', .ds-virtual-list-items' +
+    ', .ds-virtual-list-visible-items' +
+    ', [class*="conversation"]' +
     ', [class*="chat-container"]' +
-    ', [id*="chat"]' +
-    ', main [class*="scroll"]' +
-    ', [class*="Messages"]',
+    ', [id*="chat"]',
 
-  // Each conversational turn is typically a direct child element of the
-  // container.  DeepSeek uses a wrapper per message.
+  // Each message turn is a .ds-message element inside the virtual list.
   messageItem:
-    '[class*="message"]' +
+    '.ds-message' +
+    ', [class*="message"]' +
     ', [class*="Message"]' +
-    ', [data-message-id]' +
-    ', [class*="chat-message"]',
+    ', [data-message-id]',
 
-  // User messages are visually left-aligned and carry a distinct class.
+  // User messages have .ds-message WITH a hash prefix class (e.g. "d29f3d7d ds-message").
+  // Assistant messages have .ds-message WITHOUT the hash prefix.
+  // We detect user by checking for the hash class pattern, or by exclusion.
+  // The :not(.ds-assistant-message-main-content) approach helps distinguish.
   userMessage:
-    '[class*="user"]' +
+    '[class*="ds-message"]:not(:has(.ds-assistant-message-main-content))' +
+    ', [class*="user"]' +
     ', [class*="User"]' +
-    ', [class*="human"]' +
     ', [data-role="user"]',
 
-  // Assistant messages are right-aligned / have a different accent.
+  // Assistant messages contain .ds-assistant-message-main-content inside.
   assistantMessage:
-    '[class*="assistant"]' +
+    ':has(> .ds-assistant-message-main-content)' +
+    ', :has(.ds-markdown.ds-assistant-message-main-content)' +
+    ', [class*="assistant"]' +
     ', [class*="Assistant"]' +
-    ', [class*="bot"]' +
-    ', [class*="ai-"]' +
     ', [data-role="assistant"]',
 
-  // The actual text content node inside a message wrapper.
+  // The text content node inside a message.
+  // Assistant: .ds-markdown.ds-assistant-message-main-content
+  // User: the inner div with a hash class (fallback to any child div).
   messageContent:
-    '[class*="content"]' +
-    ', [class*="text"]' +
+    '.ds-markdown.ds-assistant-message-main-content' +
+    ', .ds-assistant-message-main-content' +
     ', [class*="markdown"]' +
-    ', [class*="msg-body"]' +
+    ', [class*="content"]' +
+    ', [class*="text"]' +
     ', p',
 
-  // The page title element that shows the conversation name.
+  // The page title: document.title follows "Topic Title - DeepSeek" pattern.
   chatTitle:
     'title' +
     ', [class*="title"]' +
     ', [class*="Title"]' +
-    ', h1' +
-    ', [class*="conversation-title"]',
+    ', h1',
 
   // Timestamps, if present.
   timestampElement:

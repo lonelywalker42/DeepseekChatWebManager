@@ -232,6 +232,16 @@ async function main(): Promise<void> {
 
   injectScraperUI(handleScrapeAll, handleScrapeSummary);
 
+  // Listen for messages from the popup (chrome.tabs.sendMessage)
+  chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    if (request.type === 'SCRAPE_REQUEST') {
+      handleScrapeAll()
+        .then(() => sendResponse({ success: true }))
+        .catch((err) => sendResponse({ success: false, error: String(err) }));
+      return true; // keep channel open for async response
+    }
+  });
+
   console.log(`${LOG_PREFIX} Scraper UI injected.`);
 }
 

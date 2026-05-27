@@ -1,24 +1,27 @@
 import * as topicDao from '../shared/dao/topic-dao';
 import * as sessionDao from '../shared/dao/session-dao';
 import * as templateDao from '../shared/dao/template-dao';
-import { UNCATEGORIZED_TOPIC_ID } from '../shared/constants';
+import { getDB } from '../shared/db';
+import { UNCATEGORIZED_TOPIC_ID, STORES } from '../shared/constants';
 import type { MessageRequest, MessageResponse } from '../shared/messaging';
 import type { Topic } from '../shared/types';
 
 async function ensureUncategorizedTopic(): Promise<Topic> {
   let topic = await topicDao.getTopicById(UNCATEGORIZED_TOPIC_ID);
   if (!topic) {
-    topic = await topicDao.createTopic({
+    const db = await getDB();
+    const now = Date.now();
+    topic = {
+      id: UNCATEGORIZED_TOPIC_ID,
       title: 'Uncategorized',
       type: 'other',
       status: 'active',
       tags: [],
       progressSummary: '',
-    });
-    // Override the generated id with our fixed one
-    await topicDao.updateTopic(topic.id, { id: UNCATEGORIZED_TOPIC_ID } as any);
-    // Re-fetch to get the correct id
-    topic = await topicDao.getTopicById(UNCATEGORIZED_TOPIC_ID) ?? topic;
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.put(STORES.TOPICS, topic);
   }
   return topic;
 }
