@@ -10,6 +10,7 @@ const SELECTOR_LABELS: Record<keyof SelectorMap, string> = {
   messageItem: 'Message Item',
   userMessage: 'User Message',
   assistantMessage: 'Assistant Message',
+  thinkingMessage: 'Thinking Block',
   messageContent: 'Message Content',
   chatTitle: 'Chat Title',
   timestampElement: 'Timestamp Element',

@@ -58,6 +58,10 @@ export async function handleMessage(
       }
 
       case 'CREATE_TOPIC': {
+        const existing = await topicDao.getTopicByTitle(request.payload.title);
+        if (existing) {
+          return { ok: true, data: existing };
+        }
         const topic = await topicDao.createTopic(request.payload);
         return { ok: true, data: topic };
       }
@@ -162,6 +166,15 @@ export async function handleMessage(
         const sessions = await sessionDao.getAllSessions();
         const templates = await templateDao.getAllTemplates();
         return { ok: true, data: { topics, sessions, templates } };
+      }
+
+      case 'GET_SESSION_BY_URL': {
+        const session = await sessionDao.getSessionByUrl(request.payload.url);
+        if (!session) {
+          return { ok: true, data: null };
+        }
+        const topic = await topicDao.getTopicById(session.topicId);
+        return { ok: true, data: { session, topic } };
       }
 
       case 'SCRAPE_SUMMARY': {

@@ -16,6 +16,8 @@ export interface SelectorMap {
   userMessage: string;
   /** Wrapper that marks an assistant-authored message */
   assistantMessage: string;
+  /** Wrapper that marks a thinking/reasoning block */
+  thinkingMessage: string;
   /** The element whose innerText yields the visible message text */
   messageContent: string;
   /** Element containing the conversation / page title */
@@ -59,6 +61,14 @@ export const DEFAULT_SELECTORS: SelectorMap = {
     ', [class*="assistant"]' +
     ', [class*="Assistant"]' +
     ', [data-role="assistant"]',
+
+  // Thinking/reasoning blocks from DeepSeek Deep Think mode.
+  thinkingMessage:
+    '.ds-thinking' +
+    ', [class*="ds-thinking"]' +
+    ', [class*="thinking"]' +
+    ', [class*="Thinking"]' +
+    ', [data-thinking]',
 
   // The text content node inside a message.
   // Assistant: .ds-markdown.ds-assistant-message-main-content

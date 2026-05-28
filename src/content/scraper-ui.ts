@@ -269,6 +269,28 @@ function injectStyles(): void {
     .dsm-new-topic-input::placeholder {
       color: #6b7280;
     }
+
+    /* --- Current topic badge --- */
+    #dsm-topic-badge {
+      position: fixed;
+      bottom: 84px;
+      right: 24px;
+      z-index: 2147483647;
+      background: #1f2937;
+      color: #a5b4fc;
+      font-size: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid #374151;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      opacity: 0.9;
+    }
   `;
 
   document.head.appendChild(style);
@@ -458,6 +480,23 @@ export function showTopicSelector(): Promise<TopicChoice> {
     // Focus the input
     setTimeout(() => input.focus(), 100);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Current topic badge
+// ---------------------------------------------------------------------------
+
+export function showCurrentTopicBadge(topicTitle: string): void {
+  // Remove existing badge if any
+  document.getElementById('dsm-topic-badge')?.remove();
+
+  injectStyles();
+
+  const badge = document.createElement('div');
+  badge.id = 'dsm-topic-badge';
+  badge.textContent = `📁 ${topicTitle}`;
+  badge.title = `Topic: ${topicTitle}`;
+  document.body.appendChild(badge);
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 export type TopicType = 'idea-discussion' | 'code-generation' | 'knowledge-qa' | 'other';
 export type TopicStatus = 'active' | 'completed' | 'archived';
-export type MessageRole = 'user' | 'assistant' | 'system';
+export type MessageRole = 'user' | 'assistant' | 'system' | 'thinking';
 
 export interface Topic {
   id: string;

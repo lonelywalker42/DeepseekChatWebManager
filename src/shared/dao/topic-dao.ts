@@ -21,6 +21,12 @@ export async function getTopicById(id: string): Promise<Topic | undefined> {
   return db.get(STORES.TOPICS, id);
 }
 
+export async function getTopicByTitle(title: string): Promise<Topic | undefined> {
+  const allTopics = await getAllTopics();
+  const lower = title.toLowerCase();
+  return allTopics.find((t) => t.title.toLowerCase() === lower);
+}
+
 export async function createTopic(data: Omit<Topic, 'id' | 'createdAt' | 'updatedAt'>): Promise<Topic> {
   const db = await getDB();
   const now = Date.now();

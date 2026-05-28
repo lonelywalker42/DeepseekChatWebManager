@@ -12,6 +12,7 @@ import {
   showNotification,
   showConflictPrompt,
   showTopicSelector,
+  showCurrentTopicBadge,
 } from './scraper-ui';
 
 // Inline sendMessage to avoid shared dependency with background script
@@ -114,6 +115,64 @@ function waitForMessages(selectors: Awaited<ReturnType<typeof getSelectors>>, ti
   });
 }
 
+/**
+ * Scroll through the message container to force the virtual list to render
+ * all messages. Scrolls to the top first, then incrementally to the bottom,
+ * waiting for new messages to appear at each step.
+ */
+async function scrollToLoadAllMessages(
+  selectors: Awaited<ReturnType<typeof getSelectors>>,
+): Promise<void> {
+  const containerParts = selectors.messageContainer
+    .split(',')
+    .map((s) => s.trim());
+  const itemParts = selectors.messageItem.split(',').map((s) => s.trim());
+
+  // Find the scrollable container
+  let container: Element | null = null;
+  for (const cPart of containerParts) {
+    container = document.querySelector(cPart);
+    if (container) break;
+  }
+  if (!container) return;
+
+  function countMessages(): number {
+    let count = 0;
+    for (const iPart of itemParts) {
+      count += container!.querySelectorAll(iPart).length;
+    }
+    return count;
+  }
+
+  // Scroll to top first
+  (container as HTMLElement).scrollTop = 0;
+  await new Promise((r) => setTimeout(r, 300));
+
+  // Incrementally scroll down to load all messages
+  const scrollStep = Math.floor((container as HTMLElement).clientHeight * 0.8);
+  let prevCount = 0;
+  let stableRounds = 0;
+
+  for (let i = 0; i < 200; i++) {
+    const currentCount = countMessages();
+
+    if (currentCount === prevCount) {
+      stableRounds++;
+      if (stableRounds >= 3) break; // No new messages after 3 scrolls
+    } else {
+      stableRounds = 0;
+    }
+    prevCount = currentCount;
+
+    (container as HTMLElement).scrollTop += scrollStep;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+
+  // Scroll back to bottom so the user sees the latest messages
+  (container as HTMLElement).scrollTop = (container as HTMLElement).scrollHeight;
+  await new Promise((r) => setTimeout(r, 200));
+}
+
 // ---------------------------------------------------------------------------
 // Scrape All
 // ---------------------------------------------------------------------------
@@ -124,56 +183,44 @@ async function handleScrapeAll(): Promise<void> {
   try {
     const selectors = await getSelectors();
     await waitForMessages(selectors);
+    await scrollToLoadAllMessages(selectors);
     const data = parseConversation(selectors);
 
-    const response = await sendMessage({ type: 'SCRAPE_SESSION', payload: data });
+    // Show topic selector BEFORE creating the session to avoid
+    // creating an unnecessary __uncategorized__ topic.
+    const topicChoice = await showTopicSelector();
 
-    if (response.ok) {
-      // Session saved to Uncategorized — let user pick a topic
-      const savedSession = response.data as ContentSession | undefined;
-      const sessionId = savedSession?.id;
+    let topicId: string | undefined;
 
-      const topicChoice = await showTopicSelector();
-
-      if (topicChoice.kind === 'skip') {
-        showNotification(
-          `Saved "${data.title}" with ${data.messages.length} messages.`,
-          'success',
-        );
+    if (topicChoice.kind === 'skip') {
+      // Leave topicId undefined — background will assign __uncategorized__
+      topicId = undefined;
+    } else if (topicChoice.kind === 'create') {
+      const createTopicResp = await sendMessage({
+        type: 'CREATE_TOPIC',
+        payload: {
+          title: topicChoice.title,
+          type: 'other',
+          status: 'active',
+          tags: [],
+          progressSummary: '',
+        },
+      });
+      if (!createTopicResp.ok) {
+        showNotification(`Failed to create topic: ${createTopicResp.error}`, 'error');
         return;
       }
+      topicId = (createTopicResp.data as { id: string }).id;
+    } else {
+      topicId = topicChoice.topicId;
+    }
 
-      let targetTopicId: string;
+    const payload: Record<string, unknown> = { ...data };
+    if (topicId) payload.topicId = topicId;
 
-      if (topicChoice.kind === 'create') {
-        // Create new topic first
-        const createTopicResp = await sendMessage({
-          type: 'CREATE_TOPIC',
-          payload: {
-            title: topicChoice.title,
-            type: 'other',
-            status: 'active',
-            tags: [],
-            progressSummary: '',
-          },
-        });
-        if (!createTopicResp.ok) {
-          showNotification(`Failed to create topic: ${createTopicResp.error}`, 'error');
-          return;
-        }
-        targetTopicId = (createTopicResp.data as { id: string }).id;
-      } else {
-        targetTopicId = topicChoice.topicId;
-      }
+    const response = await sendMessage({ type: 'SCRAPE_SESSION', payload });
 
-      // Move session to the selected topic
-      if (sessionId) {
-        await sendMessage({
-          type: 'UPDATE_SESSION',
-          payload: { id: sessionId, changes: { topicId: targetTopicId } },
-        });
-      }
-
+    if (response.ok) {
       showNotification(
         `Saved "${data.title}" with ${data.messages.length} messages.`,
         'success',
@@ -296,6 +343,22 @@ async function main(): Promise<void> {
   await new Promise((r) => setTimeout(r, 500));
 
   injectScraperUI(handleScrapeAll, handleScrapeSummary);
+
+  // Check if the current page is already saved and show topic badge
+  try {
+    const resp = await sendMessage({
+      type: 'GET_SESSION_BY_URL',
+      payload: { url: window.location.href },
+    });
+    if (resp.ok && resp.data) {
+      const { topic } = resp.data as { session: ContentSession; topic: { title: string } | null };
+      if (topic?.title) {
+        showCurrentTopicBadge(topic.title);
+      }
+    }
+  } catch {
+    // Silently ignore — badge is a nice-to-have
+  }
 
   // Listen for messages from the popup (chrome.tabs.sendMessage)
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {

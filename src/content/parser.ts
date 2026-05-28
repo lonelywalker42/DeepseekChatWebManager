@@ -48,6 +48,26 @@ function queryAll(root: ParentNode, selector: string): Element[] {
 }
 
 /**
+ * Determine whether `el` is a thinking/reasoning block.
+ *
+ * DeepSeek DOM: thinking blocks from Deep Think mode are wrapped in
+ * elements with thinking-related CSS classes.
+ */
+function isThinkingMessage(el: Element, selectors: SelectorMap): boolean {
+  const thinkSelParts = selectors.thinkingMessage.split(',').map((s) => s.trim());
+  for (const part of thinkSelParts) {
+    try {
+      if (el.matches(part)) return true;
+      if (el.querySelector(part)) return true;
+      if (el.closest(part)) return true;
+    } catch {
+      // selector may throw in some contexts; ignore
+    }
+  }
+  return false;
+}
+
+/**
  * Determine whether `el` is (or is inside) a user-message container.
  *
  * DeepSeek DOM: user messages are `.ds-message` elements that do NOT
@@ -59,6 +79,9 @@ function isUserMessage(el: Element, selectors: SelectorMap): boolean {
 
   // Check for assistant content in reverse — if found, it's assistant
   if (isAssistantMessage(el, selectors)) return false;
+
+  // Not a user message if it's a thinking block
+  if (isThinkingMessage(el, selectors)) return false;
 
   // Fallback: check user-specific selectors
   const userSelParts = selectors.userMessage.split(',').map((s) => s.trim());
@@ -106,7 +129,19 @@ function isAssistantMessage(el: Element, selectors: SelectorMap): boolean {
 /**
  * Extract the visible text content from a message element.
  */
-function extractContent(msgEl: Element, selectors: SelectorMap): string {
+function extractContent(msgEl: Element, selectors: SelectorMap, role?: string): string {
+  // For thinking blocks: try the thinking content element first
+  if (role === 'thinking') {
+    const thinkContent = msgEl.querySelector(
+      '[class*="thinking-content"], [class*="ds-thinking-content"], [class*="think"]',
+    );
+    if (thinkContent) {
+      return (thinkContent as HTMLElement).innerText.trim();
+    }
+    // Fallback to the element's own text
+    return (msgEl as HTMLElement).innerText.trim();
+  }
+
   // For assistant messages: use the specific ds-markdown content element
   const assistantContent = msgEl.querySelector(
     '.ds-markdown.ds-assistant-message-main-content',
@@ -205,7 +240,9 @@ export function parseConversation(selectors: SelectorMap): ScrapedSessionData {
   for (const msgEl of messageItems) {
     let role: Message['role'];
 
-    if (isUserMessage(msgEl, selectors)) {
+    if (isThinkingMessage(msgEl, selectors)) {
+      role = 'thinking';
+    } else if (isUserMessage(msgEl, selectors)) {
       role = 'user';
     } else if (isAssistantMessage(msgEl, selectors)) {
       role = 'assistant';
@@ -215,7 +252,7 @@ export function parseConversation(selectors: SelectorMap): ScrapedSessionData {
       continue;
     }
 
-    const content = extractContent(msgEl, selectors);
+    const content = extractContent(msgEl, selectors, role);
     if (!content) continue; // skip empty wrappers
 
     const timestamp = extractTimestamp(msgEl, selectors);

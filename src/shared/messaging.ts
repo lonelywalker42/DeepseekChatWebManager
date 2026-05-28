@@ -21,7 +21,8 @@ export type MessageRequest =
   | { type: 'EXPORT_TOPIC'; payload: { topicId: string } }
   | { type: 'EXPORT_ALL' }
   | { type: 'IMPORT_ALL'; payload: { data: string } }
-  | { type: 'SCRAPE_SUMMARY'; payload: { sessionUrl: string; summaryText: string } };
+  | { type: 'SCRAPE_SUMMARY'; payload: { sessionUrl: string; summaryText: string } }
+  | { type: 'GET_SESSION_BY_URL'; payload: { url: string } };
 
 // Response types
 export type MessageResponse<T = unknown> =
