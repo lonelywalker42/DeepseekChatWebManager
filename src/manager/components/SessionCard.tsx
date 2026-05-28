@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Trash2, ExternalLink, ArrowRight } from 'lucide-react';
 import type { Session } from '../../shared/types';
 
 interface SessionCardProps {
@@ -14,37 +15,39 @@ export default function SessionCard({ session, parentTitle, onDelete }: SessionC
   const previewText = session.summary ? session.summary.slice(0, 100) : '';
 
   return (
-    <div className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow">
+    <div className="card p-4 group">
       <div className="flex items-start justify-between">
         <div
           className="flex-1 cursor-pointer min-w-0"
           onClick={() => navigate(`/session/${session.id}`)}
         >
-          <h4 className="font-medium text-sm text-gray-900 truncate">{session.title}</h4>
+          <h4 className="font-semibold text-sm text-slate-900 truncate">{session.title}</h4>
 
           {session.sourceUrl && (
             <a
               href={session.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-blue-500 hover:underline truncate block mt-0.5"
+              className="text-xs text-brand-600 hover:text-brand-700 hover:underline truncate flex items-center gap-1 mt-0.5"
               onClick={(e) => e.stopPropagation()}
             >
-              {session.sourceUrl}
+              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+              {session.sourceUrl.replace(/^https?:\/\//, '').slice(0, 40)}
             </a>
           )}
 
           {parentTitle && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <ArrowRight className="w-3 h-3 flex-shrink-0" />
               Continuation of: <span className="font-medium">{parentTitle}</span>
             </p>
           )}
 
           {previewText && (
-            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{previewText}</p>
+            <p className="text-xs text-slate-500 mt-1.5 line-clamp-2">{previewText}</p>
           )}
 
-          <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+          <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
             <span>{messageCount} message{messageCount !== 1 ? 's' : ''}</span>
             <span>{new Date(session.createdAt).toLocaleDateString()}</span>
           </div>
@@ -56,17 +59,10 @@ export default function SessionCard({ session, parentTitle, onDelete }: SessionC
               e.stopPropagation();
               onDelete(session.id);
             }}
-            className="ml-3 p-1 text-gray-400 hover:text-red-500 rounded"
+            className="ml-3 p-1 text-slate-400 hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
             title="Delete session"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
+            <Trash2 className="w-4 h-4" />
           </button>
         )}
       </div>

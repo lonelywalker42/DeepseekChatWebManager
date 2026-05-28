@@ -4,6 +4,7 @@ import { sendMessage } from '../../shared/messaging';
 import { useAppStore } from '../stores/app-store';
 import TopicForm from '../components/TopicForm';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { FolderOpen, Plus, Trash2 } from 'lucide-react';
 import type { Topic, Session, TopicStatus, TopicType } from '../../shared/types';
 
 const TOPIC_TYPES: { value: TopicType | ''; label: string }[] = [
@@ -20,6 +21,12 @@ const TOPIC_STATUSES: { value: TopicStatus | ''; label: string }[] = [
   { value: 'completed', label: 'Completed' },
   { value: 'archived', label: 'Archived' },
 ];
+
+const statusColors = {
+  active: 'bg-emerald-400',
+  completed: 'bg-blue-400',
+  archived: 'bg-slate-400',
+};
 
 export default function TopicList() {
   const navigate = useNavigate();
@@ -106,21 +113,19 @@ export default function TopicList() {
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold">Topics</h1>
-        <button
-          onClick={() => setShowTopicForm(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-        >
-          + New Topic
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Topics</h1>
+        <button onClick={() => setShowTopicForm(true)} className="btn-primary flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          New Topic
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4 flex-wrap">
+      <div className="flex gap-3 mb-6 flex-wrap">
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as TopicStatus | '')}
-          className="px-3 py-1.5 border rounded text-sm"
+          className="input w-auto"
         >
           {TOPIC_STATUSES.map((s) => (
             <option key={s.value} value={s.value}>
@@ -131,7 +136,7 @@ export default function TopicList() {
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value as TopicType | '')}
-          className="px-3 py-1.5 border rounded text-sm"
+          className="input w-auto"
         >
           {TOPIC_TYPES.map((t) => (
             <option key={t.value} value={t.value}>
@@ -144,85 +149,95 @@ export default function TopicList() {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search topics..."
-          className="px-3 py-1.5 border rounded text-sm flex-1 min-w-[200px]"
+          className="input flex-1 min-w-[200px]"
         />
       </div>
 
       {/* Topic cards */}
       {loading ? (
-        <div className="text-gray-500 text-sm py-8 text-center">Loading topics...</div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card-static p-4">
+              <div className="skeleton h-5 w-3/4 mb-3 rounded" />
+              <div className="flex gap-2 mb-3">
+                <div className="skeleton h-5 w-20 rounded-full" />
+                <div className="skeleton h-5 w-16 rounded-full" />
+              </div>
+              <div className="flex gap-1 mb-3">
+                <div className="skeleton h-5 w-14 rounded-full" />
+                <div className="skeleton h-5 w-18 rounded-full" />
+              </div>
+              <div className="border-t border-slate-100 pt-3 mt-3 flex justify-between">
+                <div className="skeleton h-4 w-20 rounded" />
+                <div className="skeleton h-4 w-24 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : displayedTopics.length === 0 ? (
-        <div className="text-gray-500 text-sm py-8 text-center">
-          {topics.length === 0
-            ? 'No topics yet. Click "New Topic" to get started.'
-            : 'No topics match your filters.'}
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <FolderOpen className="w-16 h-16 text-slate-300 mb-4" />
+          <h3 className="text-lg font-medium text-slate-500 mb-1">
+            {topics.length === 0 ? 'No topics yet' : 'No topics match your filters'}
+          </h3>
+          <p className="text-sm text-slate-400 mb-4">
+            {topics.length === 0
+              ? 'Scrape your first conversation from DeepSeek to get started.'
+              : 'Try adjusting your search or filter criteria.'}
+          </p>
+          {topics.length === 0 && (
+            <button onClick={() => setShowTopicForm(true)} className="btn-primary flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Create Topic
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {displayedTopics.map((topic) => (
             <div
               key={topic.id}
-              className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+              className="card p-4 cursor-pointer group"
               onClick={() => navigate(`/topic/${topic.id}`)}
             >
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-gray-900 text-sm leading-tight flex-1 mr-2 line-clamp-2">
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="font-semibold text-slate-900 text-sm leading-tight flex-1 mr-2 line-clamp-2">
                   {topic.title}
                 </h3>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeletingTopicId(topic.id);
-                  }}
-                  className="p-1 text-gray-400 hover:text-red-500 rounded flex-shrink-0"
-                  title="Delete topic"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${statusColors[topic.status]}`}
+                    title={topic.status}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingTopicId(topic.id);
+                    }}
+                    className="p-1 text-slate-400 hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete topic"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 mb-2">
-                {/* Type badge */}
-                <span className="text-xs px-2 py-0.5 bg-gray-100 rounded text-gray-600">
-                  {topic.type}
-                </span>
-
-                {/* Status badge */}
-                <span
-                  className={`text-xs px-2 py-0.5 rounded ${
-                    topic.status === 'active'
-                      ? 'bg-green-100 text-green-800'
-                      : topic.status === 'completed'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {topic.status}
-                </span>
+                <span className="badge-muted">{topic.type}</span>
               </div>
 
               {/* Tags */}
               {topic.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {topic.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded"
-                    >
+                    <span key={tag} className="badge-primary">
                       {tag}
                     </span>
                   ))}
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-xs text-gray-400 mt-auto pt-2 border-t">
+              <div className="flex items-center justify-between text-xs text-slate-400 mt-auto pt-3 border-t border-slate-100">
                 <span>
                   {sessionCounts[topic.id] ?? 0} session
                   {(sessionCounts[topic.id] ?? 0) !== 1 ? 's' : ''}

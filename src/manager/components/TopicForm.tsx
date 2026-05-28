@@ -91,39 +91,39 @@ export default function TopicForm({ topic, onClose, onSaved }: TopicFormProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4"
+        className="bg-white rounded-2xl shadow-dialog w-full max-w-lg mx-4 animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold">{isEdit ? 'Edit Topic' : 'New Topic'}</h2>
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">{isEdit ? 'Edit Topic' : 'New Topic'}</h2>
           </div>
 
           <div className="px-6 py-4 space-y-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter topic title"
-                className="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
                 autoFocus
               />
             </div>
 
             {/* Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as TopicType)}
-                className="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
               >
                 {TOPIC_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -135,11 +135,11 @@ export default function TopicForm({ topic, onClose, onSaved }: TopicFormProps) {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TopicStatus)}
-                className="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
               >
                 {TOPIC_STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -151,21 +151,21 @@ export default function TopicForm({ topic, onClose, onSaved }: TopicFormProps) {
 
             {/* Tags */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tags <span className="text-gray-400">(comma-separated)</span>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Tags <span className="text-slate-400">(comma-separated)</span>
               </label>
               <input
                 type="text"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="e.g. react, typescript, chrome-extension"
-                className="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
               />
             </div>
 
             {/* Progress Summary */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 Progress Summary
               </label>
               <textarea
@@ -173,25 +173,16 @@ export default function TopicForm({ topic, onClose, onSaved }: TopicFormProps) {
                 onChange={(e) => setProgressSummary(e.target.value)}
                 placeholder="Describe the current progress..."
                 rows={4}
-                className="w-full px-3 py-2 border rounded text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input resize-y"
               />
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
-              disabled={saving}
-            >
+          <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="btn-secondary" disabled={saving}>
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
+            <button type="submit" disabled={saving} className="btn-primary">
               {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Topic'}
             </button>
           </div>

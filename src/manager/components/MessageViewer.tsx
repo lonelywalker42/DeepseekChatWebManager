@@ -5,67 +5,94 @@ interface MessageViewerProps {
   messages: Message[];
 }
 
+const roleConfig = {
+  user: {
+    label: 'You',
+    bubbleClass: 'bg-indigo-600 text-white rounded-2xl rounded-br-md',
+    labelClass: 'text-indigo-200',
+    dotColor: 'bg-indigo-400',
+  },
+  assistant: {
+    label: 'Assistant',
+    bubbleClass: 'bg-slate-100 text-slate-800 rounded-2xl rounded-bl-md',
+    labelClass: 'text-slate-400',
+    dotColor: 'bg-emerald-400',
+  },
+  thinking: {
+    label: 'Thinking',
+    bubbleClass: 'bg-indigo-50 text-indigo-900 border border-indigo-200 rounded-2xl rounded-bl-md',
+    labelClass: 'text-indigo-500',
+    dotColor: 'bg-violet-400',
+  },
+  system: {
+    label: 'System',
+    bubbleClass: 'bg-amber-50 text-amber-900 border border-amber-200 rounded-2xl rounded-bl-md',
+    labelClass: 'text-amber-600',
+    dotColor: 'bg-amber-400',
+  },
+};
+
 export default function MessageViewer({ messages }: MessageViewerProps) {
   if (!messages || messages.length === 0) {
     return (
-      <div className="text-sm text-gray-400 text-center py-8">No messages yet.</div>
+      <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+          <span className="text-xl">💬</span>
+        </div>
+        <p className="text-sm">No messages yet.</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {messages.map((msg, idx) => {
+        const config = roleConfig[msg.role] || roleConfig.system;
         const isUser = msg.role === 'user';
-        const isAssistant = msg.role === 'assistant';
-        const isThinking = msg.role === 'thinking';
 
         return (
           <div
             key={idx}
-            className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+            className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`max-w-[85%] rounded-lg px-4 py-2.5 ${
-                isUser
-                  ? 'bg-blue-600 text-white'
-                  : isThinking
-                  ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
-                  : isAssistant
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'bg-yellow-50 text-yellow-900 border border-yellow-200'
-              }`}
-            >
+            {/* Avatar dot for non-user messages */}
+            {!isUser && (
+              <div className={`w-2 h-2 rounded-full ${config.dotColor} flex-shrink-0 mb-2`} />
+            )}
+
+            <div className={`max-w-[80%] ${isUser ? 'order-1' : ''}`}>
               {/* Role label */}
-              <div
-                className={`text-xs font-medium mb-1 ${
-                  isUser
-                    ? 'text-blue-200'
-                    : isThinking
-                    ? 'text-indigo-500'
-                    : isAssistant
-                    ? 'text-gray-400'
-                    : 'text-yellow-600'
-                }`}
-              >
-                {isUser ? 'You' : isThinking ? 'Thinking' : isAssistant ? 'Assistant' : 'System'}
-                {msg.timestamp && (
-                  <span className="ml-2 font-normal">
-                    {new Date(msg.timestamp).toLocaleString()}
-                  </span>
+              <div className={`text-xs font-medium mb-1 px-1 ${config.labelClass}`}>
+                {config.label}
+              </div>
+
+              {/* Bubble */}
+              <div className={`px-4 py-2.5 ${config.bubbleClass}`}>
+                {msg.role === 'assistant' ? (
+                  <div className="prose prose-sm max-w-none text-slate-800">
+                    <Markdown>{msg.content}</Markdown>
+                  </div>
+                ) : msg.role === 'thinking' ? (
+                  <div className="text-sm whitespace-pre-wrap font-mono text-indigo-800 opacity-80">
+                    {msg.content}
+                  </div>
+                ) : (
+                  <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                 )}
               </div>
 
-              {/* Content */}
-              {isAssistant ? (
-                <div className="prose prose-sm max-w-none text-gray-900">
-                  <Markdown>{msg.content}</Markdown>
+              {/* Timestamp */}
+              {msg.timestamp && (
+                <div className={`text-xs text-slate-400 mt-1 px-1 ${isUser ? 'text-right' : ''}`}>
+                  {new Date(msg.timestamp).toLocaleString()}
                 </div>
-              ) : isThinking ? (
-                <div className="text-sm whitespace-pre-wrap font-mono text-indigo-800 opacity-80">{msg.content}</div>
-              ) : (
-                <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
               )}
             </div>
+
+            {/* Avatar dot for user messages */}
+            {isUser && (
+              <div className={`w-2 h-2 rounded-full ${config.dotColor} flex-shrink-0 mb-2 order-2`} />
+            )}
           </div>
         );
       })}

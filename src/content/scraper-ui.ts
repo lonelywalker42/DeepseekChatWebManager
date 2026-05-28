@@ -36,7 +36,7 @@ function injectStyles(): void {
       height: 52px;
       border-radius: 50%;
       border: none;
-      background: #4f46e5;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
       color: #fff;
       font-size: 22px;
       cursor: pointer;
@@ -44,91 +44,97 @@ function injectStyles(): void {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
     }
     #dsm-fab-toggle:hover {
       transform: scale(1.08);
-      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.55);
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+    }
+    #dsm-fab-toggle.dsm-rotated {
+      transform: rotate(45deg);
     }
 
     #dsm-fab-menu {
       display: none;
       flex-direction: column;
       gap: 6px;
+      opacity: 0;
+      transform: translateY(8px) scale(0.95);
+      transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     #dsm-fab-menu.dsm-open {
       display: flex;
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
 
     .dsm-fab-action {
       padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-      transition: background 0.15s ease, transform 0.1s ease;
+      background: rgba(255, 255, 255, 0.95);
+      color: #1e293b;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+    }
+    .dsm-fab-action:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+      transform: translateY(-1px);
     }
     .dsm-fab-action:active {
       transform: scale(0.96);
     }
 
     #dsm-btn-scrape {
-      background: #2563eb;
-      color: #fff;
-    }
-    #dsm-btn-scrape:hover {
-      background: #1d4ed8;
+      border-left: 3px solid #2563eb;
     }
 
     #dsm-btn-summary {
-      background: #059669;
-      color: #fff;
-    }
-    #dsm-btn-summary:hover {
-      background: #047857;
+      border-left: 3px solid #059669;
     }
 
     /* --- Notification toast --- */
     #dsm-notification {
       position: fixed;
-      bottom: 90px;
+      bottom: 120px;
       right: 24px;
       z-index: 2147483647;
       max-width: 360px;
       padding: 12px 18px;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 13px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.45;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      background: #ffffff;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
       opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      transform: translateX(100%);
+      transition: opacity 0.3s ease, transform 0.3s ease;
       pointer-events: none;
     }
     #dsm-notification.dsm-visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateX(0);
       pointer-events: auto;
     }
     #dsm-notification.dsm-info {
-      background: #1e40af;
-      color: #dbeafe;
+      border-left: 4px solid #3b82f6;
     }
     #dsm-notification.dsm-success {
-      background: #065f46;
-      color: #d1fae5;
+      border-left: 4px solid #10b981;
     }
     #dsm-notification.dsm-error {
-      background: #991b1b;
-      color: #fee2e2;
+      border-left: 4px solid #ef4444;
     }
     #dsm-notification.dsm-warn {
-      background: #92400e;
-      color: #fef3c7;
+      border-left: 4px solid #f59e0b;
     }
 
     /* --- Dialog overlay (shared by conflict + topic selector) --- */
@@ -136,21 +142,35 @@ function injectStyles(): void {
       position: fixed;
       inset: 0;
       z-index: 2147483647;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      animation: dsm-fade-in 0.2s ease-out;
+    }
+
+    @keyframes dsm-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes dsm-scale-in {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
 
     .dsm-dialog {
-      background: #1f2937;
-      color: #f9fafb;
-      border-radius: 14px;
+      background: #1e293b;
+      color: #f1f5f9;
+      border-radius: 16px;
       padding: 28px 32px;
       max-width: 420px;
       width: 90%;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      animation: dsm-scale-in 0.2s ease-out;
+      border: 1px solid #334155;
     }
 
     .dsm-dialog h3 {
@@ -276,14 +296,14 @@ function injectStyles(): void {
       bottom: 84px;
       right: 24px;
       z-index: 2147483647;
-      background: #1f2937;
+      background: #1e293b;
       color: #a5b4fc;
       font-size: 12px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      padding: 4px 10px;
-      border-radius: 12px;
-      border: 1px solid #374151;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       white-space: nowrap;
       max-width: 200px;
       overflow: hidden;
@@ -555,6 +575,7 @@ export function injectScraperUI(
     e.stopPropagation();
     menuOpen = !menuOpen;
     menu.classList.toggle('dsm-open', menuOpen);
+    toggle.classList.toggle('dsm-rotated', menuOpen);
   });
 
   // Close menu when clicking elsewhere
@@ -562,6 +583,7 @@ export function injectScraperUI(
     if (!fab.contains(e.target as Node) && menuOpen) {
       menuOpen = false;
       menu.classList.remove('dsm-open');
+      toggle.classList.remove('dsm-rotated');
     }
   });
 
@@ -569,6 +591,7 @@ export function injectScraperUI(
     e.stopPropagation();
     menuOpen = false;
     menu.classList.remove('dsm-open');
+    toggle.classList.remove('dsm-rotated');
     onScrape();
   });
 
@@ -576,6 +599,7 @@ export function injectScraperUI(
     e.stopPropagation();
     menuOpen = false;
     menu.classList.remove('dsm-open');
+    toggle.classList.remove('dsm-rotated');
     onScrapeSummary();
   });
 }

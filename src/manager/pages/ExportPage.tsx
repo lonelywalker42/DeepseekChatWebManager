@@ -4,6 +4,7 @@ import { useAppStore } from '../stores/app-store';
 import { exportTopicAsMarkdown } from '../../shared/utils/export-markdown';
 import { exportAllAsJSON, importAllFromJSON } from '../../shared/utils/export-json';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { FileDown, FileUp, Download, Upload } from 'lucide-react';
 import type { Topic, Session } from '../../shared/types';
 
 interface ImportSummary {
@@ -131,22 +132,29 @@ export default function ExportPage() {
 
   return (
     <div className="p-6 max-w-3xl">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Export / Import</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-6">Export / Import</h1>
 
       {/* Export Topic as Markdown */}
-      <div className="bg-white border rounded-lg p-6 mb-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Export Topic as Markdown</h2>
-        <p className="text-xs text-gray-500 mb-4">
-          Export a topic and all its sessions as a formatted Markdown file.
-        </p>
+      <div className="card-static p-6 mb-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center">
+            <FileDown className="w-5 h-5 text-brand-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Export Topic as Markdown</h2>
+            <p className="text-xs text-slate-500">
+              Export a topic and all its sessions as a formatted Markdown file.
+            </p>
+          </div>
+        </div>
 
         <div className="flex gap-3 items-end">
           <div className="flex-1">
-            <label className="block text-xs text-gray-600 mb-1">Select Topic</label>
+            <label className="block text-xs text-slate-600 mb-1">Select Topic</label>
             <select
               value={selectedTopicId}
               onChange={(e) => setSelectedTopicId(e.target.value)}
-              className="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input"
             >
               <option value="">-- Select a topic --</option>
               {topics.map((t) => (
@@ -159,43 +167,55 @@ export default function ExportPage() {
           <button
             onClick={handleExportTopic}
             disabled={exportingTopic || !selectedTopicId}
-            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
+            <Download className="w-4 h-4" />
             {exportingTopic ? 'Exporting...' : 'Export'}
           </button>
         </div>
       </div>
 
       {/* Backup / Restore */}
-      <div className="bg-white border rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Backup / Restore</h2>
+      <div className="card-static p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+            <FileUp className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Backup / Restore</h2>
+            <p className="text-xs text-slate-500">
+              Export or import all your data as a JSON backup file.
+            </p>
+          </div>
+        </div>
 
         {/* Export All */}
         <div className="mb-6">
-          <p className="text-xs text-gray-500 mb-3">
-            Export all topics, sessions, and templates as a JSON backup file.
-          </p>
           <button
             onClick={handleExportAll}
             disabled={exportingAll}
-            className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+            className="btn-secondary flex items-center gap-2"
           >
+            <Download className="w-4 h-4" />
             {exportingAll ? 'Exporting...' : 'Export All Data'}
           </button>
         </div>
 
         {/* Import */}
-        <div className="border-t pt-4">
-          <p className="text-xs text-gray-500 mb-3">
+        <div className="border-t border-slate-200 pt-4">
+          <p className="text-xs text-slate-500 mb-3">
             Import data from a JSON backup file. This will replace all existing data.
           </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleFileSelect}
-            className="block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-          />
+          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-brand-400 transition-colors">
+            <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileSelect}
+              className="block text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+            />
+          </div>
         </div>
       </div>
 
