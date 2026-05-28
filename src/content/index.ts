@@ -344,15 +344,17 @@ async function main(): Promise<void> {
 
   injectScraperUI(handleScrapeAll, handleScrapeSummary);
 
-  // Check if the current page is already saved and show topic badge
+  // Check if the current page is already saved to a real topic (not uncategorized)
+  // and show topic badge in the top-right corner.
   try {
     const resp = await sendMessage({
       type: 'GET_SESSION_BY_URL',
       payload: { url: window.location.href },
     });
     if (resp.ok && resp.data) {
-      const { topic } = resp.data as { session: ContentSession; topic: { title: string } | null };
-      if (topic?.title) {
+      const { topic } = resp.data as { session: ContentSession; topic: { id: string; title: string } | null };
+      // Only show badge if the session is assigned to a real topic (not __uncategorized__)
+      if (topic?.title && topic.id !== '__uncategorized__') {
         showCurrentTopicBadge(topic.title);
       }
     }

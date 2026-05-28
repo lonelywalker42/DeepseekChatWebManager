@@ -16,6 +16,7 @@
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.15.1",
+    "turndown": "^7.2.4",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
@@ -23,6 +24,7 @@
     "@types/chrome": "^0.1.42",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.15",

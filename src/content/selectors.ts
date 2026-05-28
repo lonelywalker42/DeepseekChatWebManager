@@ -38,10 +38,10 @@ export const DEFAULT_SELECTORS: SelectorMap = {
     ', [id*="chat"]',
 
   // Each message turn is a .ds-message element inside the virtual list.
+  // IMPORTANT: Do NOT use [class*="message"] — it matches inner content
+  // elements like .ds-assistant-message-main-content, causing duplicates.
   messageItem:
     '.ds-message' +
-    ', [class*="message"]' +
-    ', [class*="Message"]' +
     ', [data-message-id]',
 
   // User messages have .ds-message WITH a hash prefix class (e.g. "d29f3d7d ds-message").

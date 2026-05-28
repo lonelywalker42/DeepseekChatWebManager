@@ -293,7 +293,7 @@ function injectStyles(): void {
     /* --- Current topic badge --- */
     #dsm-topic-badge {
       position: fixed;
-      bottom: 84px;
+      top: 16px;
       right: 24px;
       z-index: 2147483647;
       background: #1e293b;

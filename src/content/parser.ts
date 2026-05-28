@@ -6,8 +6,11 @@
  * point (index.ts).
  */
 
+import TurndownService from 'turndown';
 import type { Message, ScrapedSessionData } from '../shared/types';
 import type { SelectorMap } from './selectors';
+
+const turndown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -127,7 +130,21 @@ function isAssistantMessage(el: Element, selectors: SelectorMap): boolean {
 }
 
 /**
+ * Convert an HTML element's content to markdown, preserving formatting
+ * like headings, bold, italic, code blocks, lists, and formulas.
+ */
+function htmlToMarkdown(el: Element): string {
+  const html = (el as HTMLElement).innerHTML;
+  return turndown.turndown(html).trim();
+}
+
+/**
  * Extract the visible text content from a message element.
+ *
+ * For assistant/thinking messages, HTML-to-markdown conversion preserves
+ * headings, formulas, code blocks, and other formatting.
+ * For user messages, plain text extraction is used since they rarely
+ * contain rich formatting.
  */
 function extractContent(msgEl: Element, selectors: SelectorMap, role?: string): string {
   // For thinking blocks: try the thinking content element first
@@ -136,10 +153,10 @@ function extractContent(msgEl: Element, selectors: SelectorMap, role?: string): 
       '[class*="thinking-content"], [class*="ds-thinking-content"], [class*="think"]',
     );
     if (thinkContent) {
-      return (thinkContent as HTMLElement).innerText.trim();
+      return htmlToMarkdown(thinkContent);
     }
-    // Fallback to the element's own text
-    return (msgEl as HTMLElement).innerText.trim();
+    // Fallback to the element's own markdown
+    return htmlToMarkdown(msgEl);
   }
 
   // For assistant messages: use the specific ds-markdown content element
@@ -147,13 +164,14 @@ function extractContent(msgEl: Element, selectors: SelectorMap, role?: string): 
     '.ds-markdown.ds-assistant-message-main-content',
   );
   if (assistantContent) {
-    return (assistantContent as HTMLElement).innerText.trim();
+    return htmlToMarkdown(assistantContent);
   }
 
   // For user messages: the content is in a direct child div (hash class).
   // Try the configured selectors first.
   const contentEl = queryFirst(msgEl, selectors.messageContent);
   if (contentEl && contentEl !== msgEl) {
+    // Use innerText for user messages (they rarely have rich formatting)
     return (contentEl as HTMLElement).innerText.trim();
   }
 
