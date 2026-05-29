@@ -115,19 +115,19 @@ export default function SettingsPage() {
   if (!selectorsLoaded) {
     return (
       <div className="p-6">
-        <div className="text-gray-500 text-sm">Loading settings...</div>
+        <div className="text-slate-500 text-sm">Loading settings...</div>
       </div>
     );
   }
 
   return (
     <div className="p-6 max-w-3xl">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Settings</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-6">Settings</h1>
 
       {/* DOM Selectors Configuration */}
-      <div className="bg-white border rounded-lg p-6 mb-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-1">DOM Selectors Configuration</h2>
-        <p className="text-xs text-gray-500 mb-4">
+      <div className="card-static p-6 mb-6">
+        <h2 className="text-sm font-semibold text-slate-700 mb-1">DOM Selectors Configuration</h2>
+        <p className="text-xs text-slate-500 mb-4">
           Customize the CSS selectors used to parse the DeepSeek chat page. Changes here will be
           used instead of the defaults.
         </p>
@@ -135,63 +135,54 @@ export default function SettingsPage() {
         <div className="space-y-3">
           {SELECTOR_KEYS.map((key) => (
             <div key={key}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-slate-600 mb-1">
                 {SELECTOR_LABELS[key]}
               </label>
               <input
                 type="text"
                 value={selectors[key]}
                 onChange={(e) => handleSelectorChange(key, e.target.value)}
-                className="w-full px-3 py-1.5 border rounded text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input font-mono text-xs"
               />
             </div>
           ))}
         </div>
 
         <div className="flex gap-3 mt-4">
-          <button
-            onClick={handleSaveSelectors}
-            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-          >
+          <button onClick={handleSaveSelectors} className="btn-primary">
             Save
           </button>
-          <button
-            onClick={handleResetSelectors}
-            className="px-4 py-2 border rounded text-sm hover:bg-gray-50"
-          >
+          <button onClick={handleResetSelectors} className="btn-secondary">
             Reset to Defaults
           </button>
         </div>
       </div>
 
       {/* Error Log */}
-      <div className="bg-white border rounded-lg p-6 mb-6">
+      <div className="card-static p-6 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-700">Recent Errors</h2>
+          <h2 className="text-sm font-semibold text-slate-700">Recent Errors</h2>
           {errors.length > 0 && (
-            <button
-              onClick={handleClearErrors}
-              className="px-3 py-1 text-xs border rounded hover:bg-gray-50"
-            >
+            <button onClick={handleClearErrors} className="btn-ghost text-xs">
               Clear Log
             </button>
           )}
         </div>
 
         {errors.length === 0 ? (
-          <p className="text-xs text-gray-400">No errors recorded.</p>
+          <p className="text-xs text-slate-400">No errors recorded.</p>
         ) : (
           <div className="space-y-2 max-h-64 overflow-auto">
             {errors.map((entry, idx) => (
-              <div key={idx} className="text-xs border-b pb-2 last:border-0">
+              <div key={idx} className="text-xs border-b border-slate-100 pb-2 last:border-0">
                 <div className="flex items-center justify-between">
                   <span className="text-red-600 font-medium">{entry.message}</span>
-                  <span className="text-gray-400">
+                  <span className="text-slate-400">
                     {new Date(entry.timestamp).toLocaleString()}
                   </span>
                 </div>
                 {entry.details && (
-                  <pre className="text-gray-500 mt-1 whitespace-pre-wrap break-all text-[11px]">
+                  <pre className="text-slate-500 mt-1 whitespace-pre-wrap break-all text-[11px]">
                     {entry.details}
                   </pre>
                 )}
@@ -202,13 +193,13 @@ export default function SettingsPage() {
       </div>
 
       {/* About */}
-      <div className="bg-white border rounded-lg p-6 mb-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">About</h2>
-        <div className="text-sm text-gray-600 space-y-1">
+      <div className="card-static p-6 mb-6">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">About</h2>
+        <div className="text-sm text-slate-600 space-y-1">
           <p>
             <span className="font-medium">DeepSeekChat Manager</span> v0.1.0
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-slate-500">
             A Chrome extension for organizing, searching, and managing your DeepSeek AI chat
             conversations. Capture sessions, group them into topics, search across all your
             conversations, and export your data.
@@ -217,23 +208,20 @@ export default function SettingsPage() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-white border border-red-200 rounded-lg p-6">
+      <div className="card-static p-6 border-red-200">
         <h2 className="text-sm font-semibold text-red-700 mb-1">Danger Zone</h2>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-slate-500 mb-4">
           These actions are irreversible. Please be careful.
         </p>
 
         {clearStep === 'idle' && (
-          <button
-            onClick={handleClearAllClick}
-            className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-          >
+          <button onClick={handleClearAllClick} className="btn-danger">
             Clear All Data
           </button>
         )}
 
         {clearStep === 'warning' && (
-          <div className="border border-red-300 rounded p-4 bg-red-50">
+          <div className="border border-red-200 rounded-lg p-4 bg-red-50">
             <p className="text-sm text-red-700 font-medium mb-2">
               Warning: This will permanently delete ALL your data.
             </p>
@@ -242,16 +230,10 @@ export default function SettingsPage() {
               undone.
             </p>
             <div className="flex gap-2">
-              <button
-                onClick={handleConfirmClearAll}
-                className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-              >
+              <button onClick={handleConfirmClearAll} className="btn-danger">
                 Yes, Delete Everything
               </button>
-              <button
-                onClick={() => setClearStep('idle')}
-                className="px-4 py-2 border rounded text-sm hover:bg-gray-50"
-              >
+              <button onClick={() => setClearStep('idle')} className="btn-secondary">
                 Cancel
               </button>
             </div>

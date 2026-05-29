@@ -46,12 +46,12 @@ export default function MainLayout() {
     <div className="flex h-screen">
       {/* Sidebar */}
       <aside
-        className={`flex-shrink-0 bg-gray-900 text-white transition-all duration-300 ease-in-out ${
+        className={`flex-shrink-0 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 text-white transition-all duration-300 ease-in-out relative ${
           sidebarCollapsed ? 'w-16' : 'w-56'
         }`}
       >
         {/* Brand header */}
-        <div className="flex items-center justify-between p-4 h-14">
+        <div className="flex items-center justify-between p-4 h-14 border-b border-white/5">
           {!sidebarCollapsed && (
             <span className="text-sm font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent truncate">
               DeepSeek Manager
@@ -59,7 +59,7 @@ export default function MainLayout() {
           )}
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-gray-800 transition-colors text-gray-400 hover:text-white"
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
             title={sidebarCollapsed ? 'Expand' : 'Collapse'}
           >
             {sidebarCollapsed ? (
@@ -71,7 +71,7 @@ export default function MainLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-2 px-2 space-y-1">
+        <nav className="mt-3 px-2 space-y-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -80,10 +80,10 @@ export default function MainLayout() {
                 to={item.to}
                 end={item.to === '/'}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 ${
+                  `flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all duration-150 ${
                     isActive
-                      ? 'bg-gray-800 text-white border-l-2 border-indigo-400 -ml-0.5 pl-[10px]'
-                      : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
+                      ? 'bg-white/10 text-white shadow-sm border-l-2 border-indigo-400 -ml-0.5 pl-[10px]'
+                      : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
                   }`
                 }
               >
@@ -100,7 +100,7 @@ export default function MainLayout() {
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top header bar with search */}
-        <header className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-4">
+        <header className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-slate-200/80 px-6 py-3 flex items-center gap-4">
           <div className="flex-1 max-w-md">
             <SearchBar />
           </div>
@@ -116,7 +116,7 @@ export default function MainLayout() {
       {toast && (
         <div className="fixed bottom-4 right-4 z-50 animate-slide-in-right">
           <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-dialog border-l-4 ${
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-dialog border-l-4 backdrop-blur-sm ${
               toastConfig[toast.type || 'success'].border
             } ${toastConfig[toast.type || 'success'].bg} min-w-[280px]`}
           >

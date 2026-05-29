@@ -300,16 +300,42 @@ function injectStyles(): void {
       color: #a5b4fc;
       font-size: 12px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 999px;
       border: 1px solid #334155;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       white-space: nowrap;
-      max-width: 200px;
+      max-width: 220px;
       overflow: hidden;
       text-overflow: ellipsis;
-      pointer-events: none;
-      opacity: 0.9;
+      cursor: pointer;
+      opacity: 0.92;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #dsm-topic-badge:hover {
+      opacity: 1;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+      border-color: #4f46e5;
+      transform: translateY(-1px);
+    }
+    #dsm-topic-badge .dsm-badge-icon {
+      flex-shrink: 0;
+    }
+    #dsm-topic-badge .dsm-badge-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #dsm-topic-badge .dsm-badge-arrow {
+      flex-shrink: 0;
+      opacity: 0.6;
+      font-size: 11px;
+      transition: opacity 0.2s ease;
+    }
+    #dsm-topic-badge:hover .dsm-badge-arrow {
+      opacity: 1;
     }
   `;
 
@@ -506,7 +532,7 @@ export function showTopicSelector(): Promise<TopicChoice> {
 // Current topic badge
 // ---------------------------------------------------------------------------
 
-export function showCurrentTopicBadge(topicTitle: string): void {
+export function showCurrentTopicBadge(topicTitle: string, topicId: string): void {
   // Remove existing badge if any
   document.getElementById('dsm-topic-badge')?.remove();
 
@@ -514,8 +540,27 @@ export function showCurrentTopicBadge(topicTitle: string): void {
 
   const badge = document.createElement('div');
   badge.id = 'dsm-topic-badge';
-  badge.textContent = `📁 ${topicTitle}`;
-  badge.title = `Topic: ${topicTitle}`;
+  badge.title = `Open "${topicTitle}" in Manager`;
+
+  const icon = document.createElement('span');
+  icon.className = 'dsm-badge-icon';
+  icon.textContent = '\u{1F4C1}';
+
+  const text = document.createElement('span');
+  text.className = 'dsm-badge-text';
+  text.textContent = topicTitle;
+
+  const arrow = document.createElement('span');
+  arrow.className = 'dsm-badge-arrow';
+  arrow.textContent = '\u2197';
+
+  badge.append(icon, text, arrow);
+
+  badge.addEventListener('click', () => {
+    const managerUrl = chrome.runtime.getURL(`src/manager/index.html#/topic/${topicId}`);
+    window.open(managerUrl, '_blank');
+  });
+
   document.body.appendChild(badge);
 }
 

@@ -355,7 +355,7 @@ async function main(): Promise<void> {
       const { topic } = resp.data as { session: ContentSession; topic: { id: string; title: string } | null };
       // Only show badge if the session is assigned to a real topic (not __uncategorized__)
       if (topic?.title && topic.id !== '__uncategorized__') {
-        showCurrentTopicBadge(topic.title);
+        showCurrentTopicBadge(topic.title, topic.id);
       }
     }
   } catch {

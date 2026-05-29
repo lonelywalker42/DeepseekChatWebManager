@@ -149,7 +149,7 @@ export default function TemplateManager() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="text-gray-500 text-sm">Loading templates...</div>
+        <div className="text-slate-500 text-sm">Loading templates...</div>
       </div>
     );
   }
@@ -157,65 +157,62 @@ export default function TemplateManager() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Templates</h1>
-        <button
-          onClick={handleNew}
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Templates</h1>
+        <button onClick={handleNew} className="btn-primary">
           + New Template
         </button>
       </div>
 
       {/* Editor */}
       {editing && (
-        <div className="bg-white border rounded-lg p-6 mb-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">
+        <div className="card-static p-6 mb-6">
+          <h2 className="text-sm font-semibold text-slate-700 mb-4">
             {editing.id ? 'Edit Template' : 'New Template'}
           </h2>
 
           {/* Name */}
           <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1">Name</label>
+            <label className="block text-xs text-slate-500 mb-1">Name</label>
             <input
               type="text"
               value={editing.name}
               onChange={(e) => setEditing({ ...editing, name: e.target.value })}
               placeholder="Template name"
-              className="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input"
             />
           </div>
 
           <div className="flex gap-4">
             {/* Content */}
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Content</label>
+              <label className="block text-xs text-slate-500 mb-1">Content</label>
               <textarea
                 ref={contentRef}
                 value={editing.content}
                 onChange={(e) => setEditing({ ...editing, content: e.target.value })}
                 placeholder="Write your template content here. Use variables like {topic_title} for dynamic values."
                 rows={12}
-                className="w-full px-3 py-2 border rounded text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input font-mono resize-y"
               />
             </div>
 
             {/* Variable reference panel */}
             <div className="w-64 flex-shrink-0">
-              <label className="block text-xs text-gray-500 mb-1">Available Variables</label>
-              <div className="border rounded p-3 bg-gray-50 space-y-2">
-                <p className="text-xs text-gray-400 mb-2">
+              <label className="block text-xs text-slate-500 mb-1">Available Variables</label>
+              <div className="card-static p-3 space-y-2">
+                <p className="text-xs text-slate-400 mb-2">
                   Click a variable to insert it at the cursor position.
                 </p>
                 {AVAILABLE_VARIABLES.map((v) => (
                   <button
                     key={v.key}
                     onClick={() => insertVariable(v.key)}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-blue-50 group"
+                    className="w-full text-left px-2 py-1.5 rounded hover:bg-brand-50 group transition-colors"
                   >
-                    <code className="text-xs text-blue-600 font-mono group-hover:text-blue-800">
+                    <code className="text-xs text-brand-600 font-mono group-hover:text-brand-700">
                       {v.key}
                     </code>
-                    <div className="text-xs text-gray-400">{v.description}</div>
+                    <div className="text-xs text-slate-400">{v.description}</div>
                   </button>
                 ))}
               </div>
@@ -229,25 +226,19 @@ export default function TemplateManager() {
               id="isDefault"
               checked={editing.isDefault}
               onChange={(e) => setEditing({ ...editing, isDefault: e.target.checked })}
-              className="rounded"
+              className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
             />
-            <label htmlFor="isDefault" className="text-sm text-gray-600">
+            <label htmlFor="isDefault" className="text-sm text-slate-600">
               Set as default template
             </label>
           </div>
 
           {/* Actions */}
           <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={() => setEditing(null)}
-              className="px-4 py-2 text-sm border rounded hover:bg-gray-50"
-            >
+            <button onClick={() => setEditing(null)} className="btn-secondary">
               Cancel
             </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
+            <button onClick={handleSave} className="btn-primary">
               {editing.id ? 'Update' : 'Create'}
             </button>
           </div>
@@ -256,27 +247,22 @@ export default function TemplateManager() {
 
       {/* Template list */}
       {templates.length === 0 ? (
-        <div className="text-sm text-gray-400 text-center py-8">
+        <div className="text-sm text-slate-400 text-center py-8">
           No templates yet. Create one to get started with continuation prompts.
         </div>
       ) : (
         <div className="space-y-3">
           {templates.map((template) => (
-            <div
-              key={template.id}
-              className="bg-white border rounded-lg p-4 hover:border-gray-300 transition-colors"
-            >
+            <div key={template.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-gray-900">{template.name}</h3>
+                    <h3 className="text-sm font-semibold text-slate-900">{template.name}</h3>
                     {template.isDefault && (
-                      <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
-                        Default
-                      </span>
+                      <span className="badge-info">Default</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 line-clamp-3">
+                  <p className="text-xs text-slate-500 line-clamp-3">
                     {template.content.length > 200
                       ? template.content.substring(0, 200) + '...'
                       : template.content || '(empty)'}
@@ -286,21 +272,18 @@ export default function TemplateManager() {
                   {!template.isDefault && (
                     <button
                       onClick={() => handleSetDefault(template.id)}
-                      className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
+                      className="btn-ghost text-xs"
                       title="Set as default"
                     >
                       Set Default
                     </button>
                   )}
-                  <button
-                    onClick={() => handleEdit(template)}
-                    className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                  >
+                  <button onClick={() => handleEdit(template)} className="btn-secondary text-xs">
                     Edit
                   </button>
                   <button
                     onClick={() => setDeletingId(template.id)}
-                    className="px-2 py-1 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50"
+                    className="btn-danger text-xs"
                   >
                     Delete
                   </button>

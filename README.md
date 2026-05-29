@@ -18,6 +18,7 @@ A Chrome browser extension for managing and organizing your DeepSeek AI conversa
 - URL-based deduplication with "Update" or "Create New" options
 - Scrape summary mode: extract only the last assistant message as a session summary
 - Badge notifications on successful scrapes
+- **Clickable topic badge**: when a page is already saved to a topic, a badge appears in the top-right corner — click it to open the corresponding topic in the Manager
 
 #### Topic Management
 - Organize conversations into Topics with customizable types (Idea Discussion, Code Generation, Knowledge QA, Other)
@@ -188,6 +189,7 @@ npm run build
    - **Update Existing** — Overwrites the old session with new data
    - **Create New** — Creates a duplicate session
    - **Cancel** — Abort the scrape
+6. When revisiting a page already saved to a topic, a **topic badge** appears in the top-right corner — click it to jump directly to that topic in the Manager
 
 ##### 2. Managing Topics
 
@@ -356,6 +358,7 @@ MIT
 - 基于 URL 的去重机制，支持"更新已有"或"新建会话"选项
 - 摘要抓取模式：仅提取最后一条助手消息作为会话摘要
 - 抓取成功后显示角标通知
+- **可点击的主题角标**：当页面已保存到某个主题时，右上角会显示主题角标 — 点击即可在管理界面中打开对应主题
 
 #### 主题管理
 - 将对话组织到主题中，支持自定义类型（想法讨论、代码生成、知识问答、其他）
@@ -526,6 +529,7 @@ npm run build
    - **Update Existing** — 用新数据覆盖旧会话
    - **Create New** — 创建一个重复的新会话
    - **Cancel** — 取消本次抓取
+6. 当再次访问已保存到主题的页面时，右上角会显示**主题角标** — 点击即可跳转到管理界面中对应的
 
 ##### 2. 管理主题
 
