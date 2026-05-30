@@ -22,10 +22,10 @@ const TOPIC_STATUSES: { value: TopicStatus | ''; label: string }[] = [
   { value: 'archived', label: 'Archived' },
 ];
 
-const statusColors = {
-  active: 'bg-emerald-400',
-  completed: 'bg-blue-400',
-  archived: 'bg-slate-400',
+const statusColors: Record<TopicStatus, string> = {
+  active: 'var(--color-success)',
+  completed: 'var(--color-accent)',
+  archived: 'var(--color-text-tertiary)',
 };
 
 export default function TopicList() {
@@ -38,7 +38,6 @@ export default function TopicList() {
   const [showTopicForm, setShowTopicForm] = useState(false);
   const [deletingTopicId, setDeletingTopicId] = useState<string | null>(null);
 
-  // Filters
   const [filterStatus, setFilterStatus] = useState<TopicStatus | ''>('');
   const [filterType, setFilterType] = useState<TopicType | ''>('');
   const [searchText, setSearchText] = useState('');
@@ -54,8 +53,6 @@ export default function TopicList() {
     });
     if (res.ok) {
       setTopics(res.data);
-
-      // Fetch session counts for each topic
       const counts: Record<string, number> = {};
       await Promise.all(
         res.data.map(async (topic) => {
@@ -63,9 +60,7 @@ export default function TopicList() {
             type: 'GET_SESSIONS',
             payload: { topicId: topic.id },
           });
-          if (sessionRes.ok) {
-            counts[topic.id] = sessionRes.data.length;
-          }
+          if (sessionRes.ok) counts[topic.id] = sessionRes.data.length;
         }),
       );
       setSessionCounts(counts);
@@ -75,23 +70,15 @@ export default function TopicList() {
     setLoading(false);
   }, [filterStatus, filterType, showToast]);
 
-  useEffect(() => {
-    loadTopics();
-  }, [loadTopics]);
+  useEffect(() => { loadTopics(); }, [loadTopics]);
 
-  // Filter and sort topics
   const displayedTopics = useMemo(() => {
     let filtered = [...topics];
-
-    // Text search on title
     if (searchText.trim()) {
       const query = searchText.toLowerCase();
       filtered = filtered.filter((t) => t.title.toLowerCase().includes(query));
     }
-
-    // Sort by updatedAt descending
     filtered.sort((a, b) => b.updatedAt - a.updatedAt);
-
     return filtered;
   }, [topics, searchText]);
 
@@ -113,44 +100,21 @@ export default function TopicList() {
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Topics</h1>
+        <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Topics</h1>
         <button onClick={() => setShowTopicForm(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          New Topic
+          <Plus className="w-4 h-4" /> New Topic
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-6 flex-wrap">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value as TopicStatus | '')}
-          className="input w-auto"
-        >
-          {TOPIC_STATUSES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as TopicStatus | '')} className="input w-auto">
+          {TOPIC_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value as TopicType | '')}
-          className="input w-auto"
-        >
-          {TOPIC_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value as TopicType | '')} className="input w-auto">
+          {TOPIC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
-        <input
-          type="text"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder="Search topics..."
-          className="input flex-1 min-w-[200px]"
-        />
+        <input type="text" value={searchText} onChange={(e) => setSearchText(e.target.value)} placeholder="Search topics..." className="input flex-1 min-w-[200px]" />
       </div>
 
       {/* Topic cards */}
@@ -167,7 +131,7 @@ export default function TopicList() {
                 <div className="skeleton h-5 w-14 rounded-full" />
                 <div className="skeleton h-5 w-18 rounded-full" />
               </div>
-              <div className="border-t border-slate-100 pt-3 mt-3 flex justify-between">
+              <div className="pt-3 mt-3 flex justify-between" style={{ borderTop: '1px solid var(--color-border-light)' }}>
                 <div className="skeleton h-4 w-20 rounded" />
                 <div className="skeleton h-4 w-24 rounded" />
               </div>
@@ -176,19 +140,18 @@ export default function TopicList() {
         </div>
       ) : displayedTopics.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <FolderOpen className="w-16 h-16 text-slate-300 mb-4" />
-          <h3 className="text-lg font-medium text-slate-500 mb-1">
+          <FolderOpen className="w-16 h-16 mb-4" style={{ color: 'var(--color-text-tertiary)' }} />
+          <h3 className="text-lg font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
             {topics.length === 0 ? 'No topics yet' : 'No topics match your filters'}
           </h3>
-          <p className="text-sm text-slate-400 mb-4">
+          <p className="text-sm mb-4" style={{ color: 'var(--color-text-tertiary)' }}>
             {topics.length === 0
               ? 'Scrape your first conversation from DeepSeek to get started.'
               : 'Try adjusting your search or filter criteria.'}
           </p>
           {topics.length === 0 && (
             <button onClick={() => setShowTopicForm(true)} className="btn-primary flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Create Topic
+              <Plus className="w-4 h-4" /> Create Topic
             </button>
           )}
         </div>
@@ -201,20 +164,17 @@ export default function TopicList() {
               onClick={() => navigate(`/topic/${topic.id}`)}
             >
               <div className="flex items-start justify-between mb-3">
-                <h3 className="font-semibold text-slate-900 text-sm leading-tight flex-1 mr-2 line-clamp-2">
+                <h3 className="font-semibold text-sm leading-tight flex-1 mr-2 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
                   {topic.title}
                 </h3>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${statusColors[topic.status]}`}
-                    title={topic.status}
-                  />
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: statusColors[topic.status] }} title={topic.status} />
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeletingTopicId(topic.id);
-                    }}
-                    className="p-1 text-slate-400 hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => { e.stopPropagation(); setDeletingTopicId(topic.id); }}
+                    className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-danger)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
                     title="Delete topic"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -226,22 +186,14 @@ export default function TopicList() {
                 <span className="badge-muted">{topic.type}</span>
               </div>
 
-              {/* Tags */}
               {topic.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
-                  {topic.tags.map((tag) => (
-                    <span key={tag} className="badge-primary">
-                      {tag}
-                    </span>
-                  ))}
+                  {topic.tags.map((tag) => <span key={tag} className="badge-primary">{tag}</span>)}
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-xs text-slate-400 mt-auto pt-3 border-t border-slate-100">
-                <span>
-                  {sessionCounts[topic.id] ?? 0} session
-                  {(sessionCounts[topic.id] ?? 0) !== 1 ? 's' : ''}
-                </span>
+              <div className="flex items-center justify-between text-xs mt-auto pt-3" style={{ color: 'var(--color-text-tertiary)', borderTop: '1px solid var(--color-border-light)' }}>
+                <span>{sessionCounts[topic.id] ?? 0} session{(sessionCounts[topic.id] ?? 0) !== 1 ? 's' : ''}</span>
                 <span>{new Date(topic.updatedAt).toLocaleDateString()}</span>
               </div>
             </div>
@@ -249,26 +201,17 @@ export default function TopicList() {
         </div>
       )}
 
-      {/* New Topic modal */}
       {showTopicForm && (
         <TopicForm
           onClose={() => setShowTopicForm(false)}
-          onSaved={() => {
-            setShowTopicForm(false);
-            loadTopics();
-          }}
+          onSaved={() => { setShowTopicForm(false); loadTopics(); }}
         />
       )}
 
-      {/* Delete confirmation */}
       <ConfirmDialog
         open={!!deletingTopicId}
         title="Delete Topic"
-        message={
-          deletingTopic
-            ? `Are you sure you want to delete "${deletingTopic.title}"? This will also delete all associated sessions and cannot be undone.`
-            : 'Are you sure you want to delete this topic?'
-        }
+        message={deletingTopic ? `Are you sure you want to delete "${deletingTopic.title}"? This will also delete all associated sessions and cannot be undone.` : 'Are you sure you want to delete this topic?'}
         onConfirm={handleDeleteTopic}
         onCancel={() => setDeletingTopicId(null)}
       />

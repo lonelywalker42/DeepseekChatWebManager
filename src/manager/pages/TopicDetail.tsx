@@ -9,6 +9,7 @@ import SessionCard from '../components/SessionCard';
 import SessionTimeline from '../components/SessionTimeline';
 import MarkdownEditor from '../components/MarkdownEditor';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { Pencil, Trash2 } from 'lucide-react';
 import type { Topic, Session, TopicStatus } from '../../shared/types';
 
 const STATUS_OPTIONS: { value: TopicStatus; label: string }[] = [
@@ -17,9 +18,19 @@ const STATUS_OPTIONS: { value: TopicStatus; label: string }[] = [
   { value: 'archived', label: 'Archived' },
 ];
 
+const statusStyles: Record<TopicStatus, { bg: string; text: string }> = {
+  active: { bg: 'var(--color-success-subtle)', text: 'var(--color-success)' },
+  completed: { bg: 'var(--color-accent-subtle)', text: 'var(--color-accent)' },
+  archived: { bg: 'var(--color-bg-tertiary)', text: 'var(--color-text-secondary)' },
+};
+
 type ViewMode = 'list' | 'timeline';
 
-export default function TopicDetail() {
+interface TopicDetailProps {
+  embedded?: boolean;
+}
+
+export default function TopicDetail({ embedded }: TopicDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const showToast = useAppStore((s) => s.showToast);
@@ -54,9 +65,7 @@ export default function TopicDetail() {
   const loadSessions = useCallback(async () => {
     if (!id) return;
     const res = await sendMessage<Session[]>({ type: 'GET_SESSIONS', payload: { topicId: id } });
-    if (res.ok) {
-      setSessions(res.data);
-    }
+    if (res.ok) setSessions(res.data);
   }, [id]);
 
   const loadData = useCallback(async () => {
@@ -129,7 +138,7 @@ export default function TopicDetail() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="text-gray-500 text-sm">Loading topic...</div>
+        <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Loading topic...</div>
       </div>
     );
   }
@@ -137,27 +146,29 @@ export default function TopicDetail() {
   if (!topic) {
     return (
       <div className="p-6">
-        <div className="text-gray-500 text-sm">Topic not found.</div>
+        <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Topic not found.</div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-4xl">
-      {/* Breadcrumb */}
-      <div className="text-sm text-slate-500 mb-4">
-        <Link to="/" className="text-brand-600 hover:text-brand-700 hover:underline">
-          Topics
-        </Link>
-        <span className="mx-1.5 text-slate-300">/</span>
-        <span className="text-slate-900 font-medium">{topic.title}</span>
-      </div>
+    <div className={embedded ? 'p-6' : 'p-6 max-w-4xl'}>
+      {/* Breadcrumb (only when not embedded in two-panel layout) */}
+      {!embedded && (
+        <div className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+          <Link to="/" className="hover:underline" style={{ color: 'var(--color-accent)' }}>
+            Topics
+          </Link>
+          <span className="mx-1.5" style={{ color: 'var(--color-text-tertiary)' }}>/</span>
+          <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{topic.title}</span>
+        </div>
+      )}
 
       {/* Header */}
       <div className="card-static p-6 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-slate-900 mb-2">{topic.title}</h1>
+            <h1 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>{topic.title}</h1>
 
             <div className="flex items-center gap-2.5 flex-wrap">
               {/* Type badge */}
@@ -167,47 +178,36 @@ export default function TopicDetail() {
               <select
                 value={topic.status}
                 onChange={(e) => handleStatusChange(e.target.value as TopicStatus)}
-                className={`text-xs px-2.5 py-1 rounded-full border-0 cursor-pointer font-medium focus:ring-2 focus:ring-brand-500 ${
-                  topic.status === 'active'
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : topic.status === 'completed'
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
+                className="text-xs px-2.5 py-1 rounded-full border-0 cursor-pointer font-medium focus:ring-2"
+                style={{
+                  backgroundColor: statusStyles[topic.status].bg,
+                  color: statusStyles[topic.status].text,
+                  outlineColor: 'var(--color-accent)',
+                }}
               >
                 {STATUS_OPTIONS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
+                  <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
 
               {/* Tags */}
               {topic.tags.map((tag) => (
-                <span key={tag} className="badge-primary">
-                  {tag}
-                </span>
+                <span key={tag} className="badge-primary">{tag}</span>
               ))}
             </div>
 
-            <div className="text-xs text-slate-400 mt-2.5">
+            <div className="text-xs mt-2.5" style={{ color: 'var(--color-text-tertiary)' }}>
               Created {new Date(topic.createdAt).toLocaleDateString()} &middot; Updated{' '}
               {new Date(topic.updatedAt).toLocaleDateString()}
             </div>
           </div>
 
           <div className="flex gap-2 ml-4">
-            <button
-              onClick={() => setEditingTopic(topic)}
-              className="btn-secondary"
-            >
-              Edit
+            <button onClick={() => setEditingTopic(topic)} className="btn-secondary flex items-center gap-1.5">
+              <Pencil className="w-3.5 h-3.5" /> Edit
             </button>
-            <button
-              onClick={() => setDeletingTopic(true)}
-              className="btn-danger"
-            >
-              Delete
+            <button onClick={() => setDeletingTopic(true)} className="btn-danger flex items-center gap-1.5">
+              <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
           </div>
         </div>
@@ -216,23 +216,17 @@ export default function TopicDetail() {
       {/* Progress Summary */}
       <div className="card-static p-6 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-slate-700">Progress Summary</h2>
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>Progress Summary</h2>
           <div className="flex gap-2">
             <button
               onClick={async () => {
                 if (!id) return;
                 setAggregating(true);
-                const res = await sendMessage<Session[]>({
-                  type: 'GET_SESSIONS',
-                  payload: { topicId: id },
-                });
+                const res = await sendMessage<Session[]>({ type: 'GET_SESSIONS', payload: { topicId: id } });
                 if (res.ok) {
                   const sorted = [...res.data].sort((a, b) => a.createdAt - b.createdAt);
                   const aggregated = sorted
-                    .map(
-                      (s, i) =>
-                        `Session ${i + 1}: ${s.title}\n${s.summary || '(no summary)'}`,
-                    )
+                    .map((s, i) => `Session ${i + 1}: ${s.title}\n${s.summary || '(no summary)'}`)
                     .join('\n\n');
                   setSummaryValue(aggregated);
                   setEditingSummary(true);
@@ -249,23 +243,11 @@ export default function TopicDetail() {
             </button>
             {editingSummary ? (
               <>
-                <button onClick={handleSummarySave} className="btn-primary text-xs">
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingSummary(false);
-                    setSummaryValue(topic.progressSummary);
-                  }}
-                  className="btn-secondary text-xs"
-                >
-                  Cancel
-                </button>
+                <button onClick={handleSummarySave} className="btn-primary text-xs">Save</button>
+                <button onClick={() => { setEditingSummary(false); setSummaryValue(topic.progressSummary); }} className="btn-secondary text-xs">Cancel</button>
               </>
             ) : (
-              <button onClick={() => setEditingSummary(true)} className="btn-secondary text-xs">
-                Edit
-              </button>
+              <button onClick={() => setEditingSummary(true)} className="btn-secondary text-xs">Edit</button>
             )}
           </div>
         </div>
@@ -278,8 +260,8 @@ export default function TopicDetail() {
 
       {/* Continuation Prompt */}
       <div className="card-static p-6 mb-6">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Generate Continuation Prompt</h2>
-        <p className="text-xs text-slate-500 mb-3">
+        <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>Generate Continuation Prompt</h2>
+        <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
           Select a template to generate a continuation prompt using the latest session.
         </p>
 
@@ -291,43 +273,20 @@ export default function TopicDetail() {
           >
             <option value="">Select a template...</option>
             {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} {t.isDefault ? '(default)' : ''}
-              </option>
+              <option key={t.id} value={t.id}>{t.name} {t.isDefault ? '(default)' : ''}</option>
             ))}
           </select>
           <button
             onClick={async () => {
               if (!selectedTemplateId || !topic) return;
               setGenerating(true);
-
               const template = templates.find((t) => t.id === selectedTemplateId);
-              if (!template) {
-                showToast('Template not found', 'error');
-                setGenerating(false);
-                return;
-              }
-
-              // Get latest session
-              const sessionsRes = await sendMessage<Session[]>({
-                type: 'GET_SESSIONS',
-                payload: { topicId: topic.id },
-              });
-              if (!sessionsRes.ok || sessionsRes.data.length === 0) {
-                showToast('No sessions found for this topic', 'error');
-                setGenerating(false);
-                return;
-              }
-
-              // Sessions are sorted by createdAt descending, so first is latest
+              if (!template) { showToast('Template not found', 'error'); setGenerating(false); return; }
+              const sessionsRes = await sendMessage<Session[]>({ type: 'GET_SESSIONS', payload: { topicId: topic.id } });
+              if (!sessionsRes.ok || sessionsRes.data.length === 0) { showToast('No sessions found for this topic', 'error'); setGenerating(false); return; }
               const latestSession = sessionsRes.data[0];
               const sessionCount = sessionsRes.data.length;
-              const prompt = generateContinuationPrompt(
-                topic,
-                latestSession,
-                template,
-                sessionCount,
-              );
+              const prompt = generateContinuationPrompt(topic, latestSession, template, sessionCount);
               setGeneratedPrompt(prompt);
               setGenerating(false);
             }}
@@ -344,17 +303,14 @@ export default function TopicDetail() {
               value={generatedPrompt}
               readOnly
               rows={8}
-              className="input font-mono bg-slate-50 resize-y"
+              className="input font-mono resize-y"
+              style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
             />
             <div className="flex justify-end gap-2 mt-3">
               <button
                 onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(generatedPrompt);
-                    showToast('Copied to clipboard');
-                  } catch {
-                    showToast('Failed to copy to clipboard', 'error');
-                  }
+                  try { await navigator.clipboard.writeText(generatedPrompt); showToast('Copied to clipboard'); }
+                  catch { showToast('Failed to copy to clipboard', 'error'); }
                 }}
                 className="btn-secondary text-xs"
               >
@@ -368,7 +324,7 @@ export default function TopicDetail() {
       {/* Sessions */}
       <div className="card-static p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-700">
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
             Sessions ({sessions.length})
           </h2>
           <div className="flex gap-2">
@@ -388,7 +344,7 @@ export default function TopicDetail() {
         </div>
 
         {sessions.length === 0 ? (
-          <div className="text-sm text-slate-400 text-center py-8">
+          <div className="text-sm text-center py-8" style={{ color: 'var(--color-text-tertiary)' }}>
             No sessions yet. Sessions will appear here when captured from DeepSeek.
           </div>
         ) : viewMode === 'timeline' ? (
@@ -402,11 +358,7 @@ export default function TopicDetail() {
               <SessionCard
                 key={session.id}
                 session={session}
-                parentTitle={
-                  session.parentSessionId
-                    ? getSessionTitle(session.parentSessionId)
-                    : undefined
-                }
+                parentTitle={session.parentSessionId ? getSessionTitle(session.parentSessionId) : undefined}
                 onDelete={(sid) => setDeletingSessionId(sid)}
               />
             ))}
@@ -414,19 +366,15 @@ export default function TopicDetail() {
         )}
       </div>
 
-      {/* Edit Topic modal */}
+      {/* Modals */}
       {editingTopic && (
         <TopicForm
           topic={editingTopic}
           onClose={() => setEditingTopic(null)}
-          onSaved={() => {
-            setEditingTopic(null);
-            loadTopic();
-          }}
+          onSaved={() => { setEditingTopic(null); loadTopic(); }}
         />
       )}
 
-      {/* Delete Topic confirmation */}
       <ConfirmDialog
         open={deletingTopic}
         title="Delete Topic"
@@ -435,7 +383,6 @@ export default function TopicDetail() {
         onCancel={() => setDeletingTopic(false)}
       />
 
-      {/* Delete Session confirmation */}
       <ConfirmDialog
         open={!!deletingSessionId}
         title="Delete Session"

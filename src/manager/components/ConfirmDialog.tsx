@@ -15,18 +15,15 @@ export default function ConfirmDialog({ open, title, message, onConfirm, onCance
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-2xl shadow-dialog w-full max-w-sm mx-4 p-6 animate-scale-in"
+        className="rounded-2xl shadow-dialog w-full max-w-sm mx-4 p-6 animate-scale-in"
+        style={{ backgroundColor: 'var(--color-card-bg)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-slate-900 mb-2">{title}</h2>
-        <p className="text-sm text-slate-600 mb-6 leading-relaxed">{message}</p>
+        <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>{title}</h2>
+        <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{message}</p>
         <div className="flex justify-end gap-3">
-          <button onClick={onCancel} className="btn-secondary">
-            Cancel
-          </button>
-          <button onClick={onConfirm} className="btn-danger">
-            Confirm
-          </button>
+          <button onClick={onCancel} className="btn-secondary">Cancel</button>
+          <button onClick={onConfirm} className="btn-danger">Confirm</button>
         </div>
       </div>
     </div>

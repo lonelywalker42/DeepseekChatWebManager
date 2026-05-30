@@ -51,38 +51,24 @@ export default function TopicForm({ topic, onClose, onSaved }: TopicFormProps) {
       return;
     }
 
-    const tags = tagsInput
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
+    const tags = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
 
     setSaving(true);
     try {
       if (isEdit) {
         const res = await sendMessage({
           type: 'UPDATE_TOPIC',
-          payload: {
-            id: topic!.id,
-            changes: { title: title.trim(), type, status, tags, progressSummary },
-          },
+          payload: { id: topic!.id, changes: { title: title.trim(), type, status, tags, progressSummary } },
         });
-        if (res.ok) {
-          showToast('Topic updated');
-          onSaved();
-        } else {
-          showToast(res.error, 'error');
-        }
+        if (res.ok) { showToast('Topic updated'); onSaved(); }
+        else { showToast(res.error, 'error'); }
       } else {
         const res = await sendMessage({
           type: 'CREATE_TOPIC',
           payload: { title: title.trim(), type, status, tags, progressSummary },
         });
-        if (res.ok) {
-          showToast('Topic created');
-          onSaved();
-        } else {
-          showToast(res.error, 'error');
-        }
+        if (res.ok) { showToast('Topic created'); onSaved(); }
+        else { showToast(res.error, 'error'); }
       }
     } finally {
       setSaving(false);
@@ -95,96 +81,51 @@ export default function TopicForm({ topic, onClose, onSaved }: TopicFormProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-dialog w-full max-w-lg mx-4 animate-scale-in"
+        className="rounded-2xl shadow-dialog w-full max-w-lg mx-4 animate-scale-in"
+        style={{ backgroundColor: 'var(--color-card-bg)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>
-          <div className="px-6 py-4 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900">{isEdit ? 'Edit Topic' : 'New Topic'}</h2>
+          <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>{isEdit ? 'Edit Topic' : 'New Topic'}</h2>
           </div>
 
           <div className="px-6 py-4 space-y-4">
-            {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter topic title"
-                className="input"
-                autoFocus
-              />
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Title</label>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter topic title" className="input" autoFocus />
             </div>
 
-            {/* Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as TopicType)}
-                className="input"
-              >
-                {TOPIC_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Type</label>
+              <select value={type} onChange={(e) => setType(e.target.value as TopicType)} className="input">
+                {TOPIC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
 
-            {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TopicStatus)}
-                className="input"
-              >
-                {TOPIC_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value as TopicStatus)} className="input">
+                {TOPIC_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
 
-            {/* Tags */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Tags <span className="text-slate-400">(comma-separated)</span>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                Tags <span style={{ color: 'var(--color-text-tertiary)' }}>(comma-separated)</span>
               </label>
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="e.g. react, typescript, chrome-extension"
-                className="input"
-              />
+              <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="e.g. react, typescript, chrome-extension" className="input" />
             </div>
 
-            {/* Progress Summary */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Progress Summary
-              </label>
-              <textarea
-                value={progressSummary}
-                onChange={(e) => setProgressSummary(e.target.value)}
-                placeholder="Describe the current progress..."
-                rows={4}
-                className="input resize-y"
-              />
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Progress Summary</label>
+              <textarea value={progressSummary} onChange={(e) => setProgressSummary(e.target.value)} placeholder="Describe the current progress..." rows={4} className="input resize-y" />
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="btn-secondary" disabled={saving}>
-              Cancel
-            </button>
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Topic'}
-            </button>
+          <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid var(--color-border)' }}>
+            <button type="button" onClick={onClose} className="btn-secondary" disabled={saving}>Cancel</button>
+            <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Topic'}</button>
           </div>
         </form>
       </div>

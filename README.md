@@ -51,6 +51,14 @@ A Chrome browser extension for managing and organizing your DeepSeek AI conversa
 - Error log viewer (last 50 entries)
 - Clear all data with double confirmation
 
+#### Manager UI
+- **Two-panel home layout**: left sidebar shows topic list with search and filters, right panel shows topic detail — similar to Notion's layout
+- **Dark mode**: light / dark / system theme toggle, persisted across sessions via `localStorage`
+- **CSS variable theming**: all colors defined as CSS custom properties for instant theme switching
+- **Responsive sidebar**: collapsible (280px → 64px) with smooth 200ms transition
+- **Polished components**: cards with hover lift, buttons with press feedback, 150ms transitions throughout
+- **Typography scale**: 18px/600 titles, 14px/600 section headers, 13px/400 body, 12px/400 metadata
+
 ### Tech Stack
 
 | Technology | Purpose |
@@ -90,7 +98,8 @@ DeepseekManager/
 │   │   ├── main.tsx                       # React mount point
 │   │   ├── App.tsx                        # Route definitions
 │   │   ├── layouts/
-│   │   │   └── MainLayout.tsx             # Sidebar + header + content
+│   │   │   ├── MainLayout.tsx             # Sidebar + header + content
+│   │   │   └── HomeLayout.tsx             # Two-panel layout (topic sidebar + detail)
 │   │   ├── pages/
 │   │   │   ├── TopicList.tsx              # Topic grid with filters
 │   │   │   ├── TopicDetail.tsx            # Topic detail + sessions
@@ -100,6 +109,7 @@ DeepseekManager/
 │   │   │   ├── ExportPage.tsx             # Export/Import tools
 │   │   │   └── SettingsPage.tsx           # Selectors + error log
 │   │   ├── components/
+│   │   │   ├── TopicSidebar.tsx           # Topic list sidebar with search/filters
 │   │   │   ├── TopicForm.tsx              # Create/edit topic modal
 │   │   │   ├── SessionCard.tsx            # Session list item
 │   │   │   ├── MessageViewer.tsx          # Chat-style message display
@@ -391,6 +401,14 @@ MIT
 - 错误日志查看器（最近 50 条）
 - 清除所有数据（二次确认）
 
+#### 管理界面
+- **双栏主页布局**：左侧边栏展示主题列表（支持搜索和筛选），右侧展示主题详情 — 类似 Notion 布局
+- **暗色模式**：亮色 / 暗色 / 跟随系统三种主题，通过 `localStorage` 跨会话持久化
+- **CSS 变量主题系统**：所有颜色定义为 CSS 自定义属性，支持一键切换主题
+- **可折叠侧边栏**：280px → 64px 平滑过渡，动画时长 200ms
+- **精致组件**：卡片悬浮上移、按钮点击反馈、全局 150ms 过渡动画
+- **排版规范**：标题 18px/600、区块标题 14px/600、正文 13px/400、辅助信息 12px/400
+
 ### 技术栈
 
 | 技术 | 用途 |
@@ -430,7 +448,8 @@ DeepseekManager/
 │   │   ├── main.tsx                       # React 挂载点
 │   │   ├── App.tsx                        # 路由定义
 │   │   ├── layouts/
-│   │   │   └── MainLayout.tsx             # 侧边栏 + 顶栏 + 内容区
+│   │   │   ├── MainLayout.tsx             # 侧边栏 + 顶栏 + 内容区
+│   │   │   └── HomeLayout.tsx             # 双栏布局（主题侧边栏 + 详情区）
 │   │   ├── pages/
 │   │   │   ├── TopicList.tsx              # 主题列表（带筛选）
 │   │   │   ├── TopicDetail.tsx            # 主题详情 + 会话列表
@@ -440,6 +459,7 @@ DeepseekManager/
 │   │   │   ├── ExportPage.tsx             # 导出/导入工具
 │   │   │   └── SettingsPage.tsx           # 选择器配置 + 错误日志
 │   │   ├── components/
+│   │   │   ├── TopicSidebar.tsx           # 主题列表侧边栏（搜索/筛选）
 │   │   │   ├── TopicForm.tsx              # 创建/编辑主题弹窗
 │   │   │   ├── SessionCard.tsx            # 会话列表项
 │   │   │   ├── MessageViewer.tsx          # 聊天风格消息展示

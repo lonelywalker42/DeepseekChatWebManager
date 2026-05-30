@@ -1,24 +1,23 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAppStore } from '../stores/app-store';
-import SearchBar from '../components/SearchBar';
+import TopicSidebar from '../components/TopicSidebar';
 import {
-  LayoutGrid,
-  FileText,
-  Search,
-  Download,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
   CheckCircle,
   XCircle,
   X,
   Sun,
   Moon,
   Monitor,
+  FileText,
+  Search,
+  Download,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 
-const navItems = [
-  { to: '/', label: 'Topics', icon: LayoutGrid },
+const secondaryNav = [
   { to: '/templates', label: 'Templates', icon: FileText },
   { to: '/search', label: 'Search', icon: Search },
   { to: '/export', label: 'Export', icon: Download },
@@ -28,13 +27,11 @@ const navItems = [
 const toastConfig = {
   success: {
     icon: CheckCircle,
-    border: 'border-emerald-500',
     text: 'text-emerald-700',
     iconColor: 'text-emerald-500',
   },
   error: {
     icon: XCircle,
-    border: 'border-red-500',
     text: 'text-red-700',
     iconColor: 'text-red-500',
   },
@@ -43,8 +40,8 @@ const toastConfig = {
 const themeIcons: Record<string, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
 const themeLabels: Record<string, string> = { light: 'Light', dark: 'Dark', system: 'System' };
 
-export default function MainLayout() {
-  const { sidebarCollapsed, toggleSidebar, toast, clearToast, theme, setTheme } = useAppStore();
+export default function HomeLayout() {
+  const { topicSidebarCollapsed, toggleTopicSidebar, toast, clearToast, theme, setTheme } = useAppStore();
 
   const cycleTheme = () => {
     const order: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
@@ -55,107 +52,83 @@ export default function MainLayout() {
   const ThemeIcon = themeIcons[theme];
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
+    <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+      {/* Left sidebar: topic list + secondary nav */}
       <aside
-        className="flex-shrink-0 transition-all duration-200 ease-in-out relative flex flex-col"
+        className="flex-shrink-0 flex flex-col transition-all duration-200 ease-in-out"
         style={{
-          width: sidebarCollapsed ? 64 : 224,
+          width: topicSidebarCollapsed ? 64 : 280,
           backgroundColor: 'var(--color-bg-sidebar)',
+          borderRight: '1px solid var(--color-border)',
         }}
       >
         {/* Brand header */}
-        <div className="flex items-center justify-between p-4 h-14" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          {!sidebarCollapsed && (
+        <div
+          className="flex items-center justify-between p-4 h-14 flex-shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+        >
+          {!topicSidebarCollapsed && (
             <span className="text-sm font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent truncate">
               DeepSeek Manager
             </span>
           )}
           <button
-            onClick={toggleSidebar}
+            onClick={toggleTopicSidebar}
             className="p-1.5 rounded-lg transition-colors"
             style={{ color: 'var(--color-text-sidebar-muted)' }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--color-text-sidebar)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text-sidebar-muted)'; }}
-            title={sidebarCollapsed ? 'Expand' : 'Collapse'}
+            title={topicSidebarCollapsed ? 'Expand' : 'Collapse'}
           >
-            {sidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
+            {topicSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="mt-3 px-2 space-y-0.5 flex-1">
-          {navItems.map((item) => {
+        {/* Topic sidebar content */}
+        {!topicSidebarCollapsed && (
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            <TopicSidebar />
+          </div>
+        )}
+
+        {/* Secondary nav + theme toggle */}
+        <div className="flex-shrink-0 px-2 pb-3 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          {secondaryNav.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all duration-150 ${
-                    isActive
-                      ? 'text-white shadow-sm'
-                      : ''
-                  }`
-                }
+                className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150"
                 style={({ isActive }) => ({
                   backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
                   color: isActive ? 'var(--color-text-sidebar)' : 'var(--color-text-sidebar-muted)',
-                  borderLeft: isActive ? '2px solid var(--color-accent)' : '2px solid transparent',
-                  marginLeft: isActive ? -0.5 : 0,
-                  paddingLeft: isActive ? 10 : 12,
                 })}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                {!sidebarCollapsed && (
-                  <span className="truncate">{item.label}</span>
-                )}
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {!topicSidebarCollapsed && <span className="truncate text-xs">{item.label}</span>}
               </NavLink>
             );
           })}
-        </nav>
 
-        {/* Theme toggle */}
-        <div className="px-2 pb-3">
+          {/* Theme toggle */}
           <button
             onClick={cycleTheme}
-            className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all duration-150 w-full"
+            className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-150 w-full"
             style={{ color: 'var(--color-text-sidebar-muted)' }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--color-text-sidebar)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text-sidebar-muted)'; }}
             title={`Theme: ${themeLabels[theme]}`}
           >
-            <ThemeIcon className="w-5 h-5 flex-shrink-0" />
-            {!sidebarCollapsed && (
-              <span className="truncate">{themeLabels[theme]}</span>
-            )}
+            <ThemeIcon className="w-4 h-4 flex-shrink-0" />
+            {!topicSidebarCollapsed && <span className="truncate text-xs">{themeLabels[theme]}</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
-        {/* Top header bar with search */}
-        <header
-          className="flex-shrink-0 px-6 py-3 flex items-center gap-4"
-          style={{
-            backgroundColor: 'var(--color-bg-primary)',
-            borderBottom: '1px solid var(--color-border)',
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <div className="flex-1 max-w-md">
-            <SearchBar />
-          </div>
-        </header>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-auto">
+      {/* Right: main content */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <main className="flex-1 overflow-auto" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
           <Outlet />
         </main>
       </div>
@@ -164,7 +137,7 @@ export default function MainLayout() {
       {toast && (
         <div className="fixed bottom-4 right-4 z-50 animate-slide-in-right">
           <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-dialog border-l-4 backdrop-blur-sm min-w-[280px]`}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl shadow-dialog border-l-4 backdrop-blur-sm min-w-[280px]"
             style={{
               backgroundColor: 'var(--color-card-bg)',
               borderColor: toast.type === 'error' ? 'var(--color-danger)' : 'var(--color-success)',
@@ -187,13 +160,8 @@ export default function MainLayout() {
             >
               <X className="w-4 h-4" />
             </button>
-            {/* Progress bar */}
             <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-b-xl overflow-hidden" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
-              <div
-                className={`h-full animate-shrink ${
-                  toast.type === 'error' ? 'bg-red-400' : 'bg-emerald-400'
-                }`}
-              />
+              <div className={`h-full animate-shrink ${toast.type === 'error' ? 'bg-red-400' : 'bg-emerald-400'}`} />
             </div>
           </div>
         </div>
