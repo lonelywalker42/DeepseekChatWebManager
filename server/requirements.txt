@@ -17,6 +17,9 @@ openai>=1.80.0
 # Streamlit
 streamlit>=1.40.0
 
+# Document parsing
+pymupdf>=1.25.0
+
 # Utilities
 python-dotenv>=1.0.0
 pydantic>=2.0.0

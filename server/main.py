@@ -10,6 +10,9 @@ from models.database import init_db
 from api.sessions import router as sessions_router
 from api.cards import router as cards_router
 from api.tasks import router as tasks_router
+from api.tags import router as tags_router
+from api.graph import router as graph_router
+from api.import_doc import router as import_router
 
 
 logging.basicConfig(
@@ -49,6 +52,9 @@ app.add_middleware(
 app.include_router(sessions_router)
 app.include_router(cards_router)
 app.include_router(tasks_router)
+app.include_router(tags_router)
+app.include_router(graph_router)
+app.include_router(import_router)
 
 
 @app.get("/health")
