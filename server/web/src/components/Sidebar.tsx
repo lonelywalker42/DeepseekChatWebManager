@@ -10,14 +10,17 @@ import {
   Upload,
   Settings,
   Brain,
+  MessageSquareText,
+  FileText,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/upload", label: "上传对话", icon: MessageSquareText },
   { href: "/cards", label: "知识卡片", icon: BookOpen },
   { href: "/graph", label: "知识图谱", icon: Network },
   { href: "/tags", label: "标签审核", icon: Tags },
-  { href: "/import", label: "文档导入", icon: Upload },
+  { href: "/import", label: "文档导入", icon: FileText },
   { href: "/settings", label: "设置", icon: Settings },
 ];
 
