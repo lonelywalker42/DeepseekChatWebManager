@@ -4,10 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+### Chrome 扩展
 ```bash
 npm run dev        # Vite dev server with HMR (content scripts + service worker auto-reload)
 npm run build      # tsc type-check + vite production build → dist/
 npm run preview    # Preview production build
+```
+
+### 知识库后端
+```bash
+cd server
+python -m uvicorn main:app --reload --port 8000   # FastAPI 后端
+python -m streamlit run streamlit_app/app.py        # Streamlit 前端（可选）
+
+cd server/web
+npm run dev                                          # Next.js 前端（端口 3000）
+npm run build                                        # Next.js 生产构建
 ```
 
 No test framework is configured. `tsc` is used only for type-checking (`noEmit: true`); Vite handles all bundling.
@@ -16,41 +28,71 @@ Load the extension in Chrome: `chrome://extensions` → Developer mode → Load 
 
 ## Architecture
 
-Chrome Manifest V3 extension with three isolated runtime contexts:
+项目包含两个独立子系统：Chrome 扩展 + 知识库后端。
 
-### Content Script (`src/content/`)
-Injected into `chat.deepseek.com`. Scrapes conversation DOM via configurable selectors (`selectors.ts`), parses messages (`parser.ts`), injects a floating action button (`scraper-ui.ts`). Entry: `index.ts`.
+### Chrome 扩展（Manifest V3）
 
-**Critical**: The content script does NOT import from `src/shared/messaging.ts`. It inlines its own `sendMessage` and response types because @crxjs/vite-plugin would otherwise bundle content and background scripts into the same chunk (they'd share the messaging module as a common dependency).
+三个隔离的运行时上下文：
 
-### Background Service Worker (`src/background/`)
-`service-worker.ts` → `message-router.ts`. Central hub for all IndexedDB access. Receives messages from both content script and manager UI, dispatches to the DAO layer. 18 message types defined in `src/shared/messaging.ts`.
+#### Content Script (`src/content/`)
+注入 `chat.deepseek.com`。通过可配置选择器抓取对话 DOM（`selectors.ts`），解析消息（`parser.ts`），注入浮动按钮（`scraper-ui.ts`）。入口：`index.ts`。
 
-**Critical**: The background entry point is named `service-worker.ts` (not `index.ts`). This is required because @crxjs/vite-plugin uses filenames to map entry points to output chunks — two `index.ts` files caused the plugin to swap content/background bundles.
+**关键**：Content Script 不导入 `src/shared/messaging.ts`，内联自己的 `sendMessage`。因为 @crxjs/vite-plugin 会将共享模块作为公共依赖打包，导致 content 和 background 脚本合并。
 
-### Manager UI (`src/manager/`)
-Full React SPA (HashRouter). Communicates with background via `chrome.runtime.sendMessage()`. Opened as a separate tab from the popup. Built as an additional `rollupOptions.input` entry in `vite.config.ts` (not listed in the manifest).
+#### Background Service Worker (`src/background/`)
+`service-worker.ts` → `message-router.ts`。所有 IndexedDB 访问的中心枢纽。接收来自 content script 和 manager UI 的消息，分发到 DAO 层。20 种消息类型定义在 `src/shared/messaging.ts`。
 
-### Popup (`src/popup.tsx`)
-Lightweight stats view + "Scrape Current Page" button. Uses `chrome.tabs.sendMessage()` to trigger content script scraping.
+**关键**：Background 入口必须命名为 `service-worker.ts`（不是 `index.ts`）。@crxjs/vite-plugin 使用文件名映射入口点到输出块。
+
+#### Manager UI (`src/manager/`)
+完整 React SPA（HashRouter）。通过 `chrome.runtime.sendMessage()` 与 background 通信。
+
+### 知识库后端（FastAPI + Next.js）
+
+#### 后端 (`server/`)
+FastAPI REST API + AI 处理管道。核心模块：
+- `services/llm_service.py` — LLM API 调用（OpenAI 兼容，支持 DeepSeek/OpenAI/Ollama）
+- `services/pipeline.py` — 完整处理管道 + 任务持久化
+- `services/embedding.py` — 向量嵌入（bge-small-zh，带降级）
+- `services/import_service.py` — 外部文档解析（MD/PDF/TXT）
+- `api/sessions.py` — 去重 + 增量更新（以 source_url 为主键）
+- `api/settings.py` — LLM 配置管理（运行时可修改）
+
+存储：SQLite（sessions, cards, tags, tasks）+ ChromaDB（向量）
+
+#### 前端 (`server/web/`)
+Next.js 14 App Router + Tailwind CSS。页面：
+- `/` — 仪表盘
+- `/upload` — 上传对话（DeepSeek JSON）
+- `/cards` — 卡片浏览 + `/cards/[id]` 详情
+- `/graph` — 知识图谱（vis-network）
+- `/tags` — 标签审核
+- `/import` — 文档导入
+- `/settings` — LLM 配置
 
 ## Data Flow
 
 ```
-Content Script ──sendMessage──> Background ──> IndexedDB (via idb)
-Manager UI     ──sendMessage──> Background ──> IndexedDB (via idb)
-Popup          ──tabs.sendMessage──> Content Script
-```
+Chrome 扩展 ──sendMessage──> Background ──> IndexedDB (via idb)
 
-All DB access goes through the background service worker. DAO modules in `src/shared/dao/` (topic-dao, session-dao, template-dao). DB singleton with lazy init in `src/shared/db.ts`. Three stores: `topics`, `sessions`, `templates`.
+Next.js 前端 ──HTTP──> FastAPI 后端 ──> SQLite + ChromaDB
+Streamlit   ──HTTP──> FastAPI 后端 ──> SQLite + ChromaDB
+```
 
 ## Key Constraints
 
+### Chrome 扩展
 - **HashRouter only** — `chrome-extension://` URLs don't support BrowserRouter
-- **No `window` in service worker** — background code must not use DOM APIs or import modules that do
-- **Inline styles in content script** — `scraper-ui.ts` injects styles via `<style>` element, no Tailwind in content script context
-- **@crxjs rollupOptions conflict** — the `rollupOptions.input` in `vite.config.ts` only lists the manager page; content script, background, and popup entries come from the manifest via the CRX plugin
-- **Sentinel topic** — `__uncategorized__` is auto-created for sessions without a topic assignment
+- **No `window` in service worker** — background code must not use DOM APIs
+- **Inline styles in content script** — no Tailwind in content script context
+- **Sentinel topic** — `__uncategorized__` is auto-created for sessions without a topic
+
+### 知识库后端
+- **OpenAI 兼容 API** — LLM 调用使用 OpenAI SDK，可替换为任何兼容端点
+- **任务持久化** — 任务状态写入 SQLite `tasks` 表，重启自动恢复
+- **嵌入降级** — 模型不可用时使用 hash-based 伪向量，管道不中断
+- **增量更新** — source_url 为主键，重复上传只处理新增消息
+- **DeepSeek mapping 格式** — JSON 解析支持树状结构（REQUEST/RESPONSE/THINK 片段）
 
 ## Core Types (`src/shared/types.ts`)
 
@@ -61,3 +103,4 @@ All DB access goes through the background service worker. DAO modules in `src/sh
 - Manager UI: Tailwind CSS utility classes
 - Content script scraper UI: Pure inline/injected styles (no external CSS)
 - Popup: Inline styles
+- Next.js 前端: Tailwind CSS 暗色主题（indigo accent）

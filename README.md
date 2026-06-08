@@ -698,6 +698,37 @@ npm run build
 | Edge 109+ | 支持（基于 Chromium） |
 | Firefox | 暂不支持（需要 MV2/MV3 适配） |
 
+### 知识库服务
+
+本项目还包含一个本地知识库后端服务（`server/` 目录），将 DeepSeek 对话自动转化为结构化知识卡片。
+
+**功能概览：**
+- AI 驱动的会话总结、话题切分、知识卡片生成
+- 语义搜索（bge-small-zh 嵌入 + ChromaDB）
+- 知识图谱可视化（vis-network）
+- 标签审核与管理
+- 外部文档导入（Markdown、PDF、纯文本）
+- 增量更新（重复上传自动检测新消息）
+- 任务持久化（重启不丢失进度）
+- LLM 可替换（支持所有 OpenAI 兼容 API）
+
+**快速启动：**
+
+```bash
+# 后端
+cd server
+pip install -r requirements.txt
+cp .env.example .env  # 填入 API Key
+python -m uvicorn main:app --reload --port 8000
+
+# 前端
+cd server/web
+npm install
+npm run dev
+```
+
+详见 [server/README.md](server/README.md)
+
 ### 开源协议
 
 MIT
