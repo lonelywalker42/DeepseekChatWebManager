@@ -71,6 +71,9 @@ def process_session(
     try:
         summary_data = llm_service.summarize_session(conversation_text)
     except Exception as e:
+        import traceback
+        print(f"[PIPELINE ERROR] Session summarization failed: {e}", flush=True)
+        traceback.print_exc()
         logger.error("Session summarization failed: %s", e)
         summary_data = {
             "session_title": f"Session {session_id[:8]}",
@@ -95,6 +98,9 @@ def process_session(
     try:
         topics = llm_service.split_topics(conversation_text, msg_dicts)
     except Exception as e:
+        import traceback
+        print(f"[PIPELINE ERROR] Topic splitting failed: {e}", flush=True)
+        traceback.print_exc()
         logger.error("Topic splitting failed: %s", e)
         # Fallback: treat the entire conversation as one topic
         topics = [{
@@ -128,6 +134,9 @@ def process_session(
         try:
             card_data = llm_service.generate_card(segment_text, topic.get("topic_title", ""))
         except Exception as e:
+            import traceback
+            print(f"[PIPELINE ERROR] Card generation failed for topic {i}: {e}", flush=True)
+            traceback.print_exc()
             logger.error("Card generation failed for topic %d: %s", i, e)
             card_data = {
                 "title": topic.get("topic_title", f"话题 {i + 1}"),
