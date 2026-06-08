@@ -74,14 +74,60 @@ def _run_pipeline(session_id: str, messages: list[MessageInput], task_id: str):
         db.close()
 
 
+def _walk_mapping(mapping: dict, node_id: str) -> list[MessageInput]:
+    """Walk the DeepSeek mapping tree (DFS) and extract messages."""
+    node = mapping.get(node_id)
+    if not node:
+        return []
+
+    messages = []
+
+    # Extract fragments from this node's message
+    msg = node.get("message")
+    if msg and msg.get("fragments"):
+        for frag in msg["fragments"]:
+            content = frag.get("content", "")
+            if not content:
+                continue
+            frag_type = frag.get("type", "")
+            if frag_type == "REQUEST":
+                messages.append(MessageInput(role="user", content=content))
+            elif frag_type == "RESPONSE":
+                messages.append(MessageInput(role="assistant", content=content))
+            # THINK fragments are skipped (reasoning trace)
+
+    # Recurse into children
+    for child_id in node.get("children", []):
+        messages.extend(_walk_mapping(mapping, child_id))
+
+    return messages
+
+
 def _parse_deepseek_json(data: dict | list) -> tuple[list[MessageInput], str | None]:
     """Parse DeepSeek export JSON into MessageInput list. Returns (messages, source_url)."""
     messages = []
     source_url = None
 
+    # Case 1: Array of conversations with mapping (typical DeepSeek export)
+    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and "mapping" in data[0]:
+        # Take the first conversation (or caller handles multiple)
+        conv = data[0]
+        conv_id = conv.get("id", "")
+        source_url = f"https://chat.deepseek.com/c/{conv_id}" if conv_id else None
+        messages = _walk_mapping(conv["mapping"], "root")
+        return messages, source_url
+
+    # Case 2: Single conversation with mapping
+    if isinstance(data, dict) and "mapping" in data:
+        conv_id = data.get("id", "")
+        source_url = f"https://chat.deepseek.com/c/{conv_id}" if conv_id else None
+        messages = _walk_mapping(data["mapping"], "root")
+        return messages, source_url
+
+    # Case 3: Simple messages array
     if isinstance(data, list):
         for item in data:
-            if isinstance(item, dict):
+            if isinstance(item, dict) and "role" in item:
                 messages.append(MessageInput(
                     role=item.get("role", "user"),
                     content=item.get("content", ""),
@@ -89,19 +135,19 @@ def _parse_deepseek_json(data: dict | list) -> tuple[list[MessageInput], str | N
                 ))
         return messages, source_url
 
+    # Case 4: Object with messages/conversation array
     if isinstance(data, dict):
-        # Extract source URL if present
         source_url = data.get("source_url") or data.get("url") or data.get("conversation_id")
-
         msg_list = data.get("messages", data.get("conversation", []))
         if isinstance(msg_list, list):
             for item in msg_list:
-                if isinstance(item, dict):
+                if isinstance(item, dict) and "role" in item:
                     messages.append(MessageInput(
                         role=item.get("role", "user"),
                         content=item.get("content", ""),
                         timestamp=item.get("timestamp"),
                     ))
+
     return messages, source_url
 
 
@@ -214,13 +260,41 @@ async def upload_session_file(
     background_tasks: BackgroundTasks = None,
     db: DbSession = Depends(get_db),
 ):
-    """Upload a DeepSeek JSON file with dedup + incremental update."""
+    """Upload a DeepSeek JSON file with dedup + incremental update.
+
+    Supports:
+    - Array of conversations with mapping tree (typical DeepSeek export)
+    - Single conversation object with mapping
+    - Simple messages array/object
+    """
     content = await file.read()
     try:
         data = json.loads(content)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON file")
 
+    # Case: Array of conversations with mapping (DeepSeek export)
+    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and "mapping" in data[0]:
+        results = []
+        for conv in data:
+            messages = _walk_mapping(conv.get("mapping", {}), "root")
+            if not messages:
+                continue
+            conv_id = conv.get("id", "")
+            source_url = f"https://chat.deepseek.com/c/{conv_id}" if conv_id else None
+            title = conv.get("title", file.filename or "Untitled")
+            upload = SessionUpload(
+                title=title,
+                source_type="deepseek",
+                source_url=source_url,
+                original_filename=file.filename,
+                messages=messages,
+            )
+            result = await upload_session(upload, background_tasks, db)
+            results.append(result)
+        return {"conversations": results, "total": len(results)}
+
+    # Single conversation or simple format
     messages, source_url = _parse_deepseek_json(data)
     title = data.get("title", file.filename or "Untitled") if isinstance(data, dict) else file.filename
 
