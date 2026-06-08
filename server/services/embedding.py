@@ -1,13 +1,12 @@
-"""Embedding service with graceful fallback when model is unavailable.
+"""Embedding service using sentence-transformers (bge-small-zh).
 
-Uses a background thread with timeout to attempt model loading.
-If loading hangs (e.g. network issues, CUDA init), falls back immediately.
+The model is loaded from a local path (downloaded via modelscope).
+Falls back to hash-based pseudo-embedding if the model is unavailable.
 """
 
 import hashlib
 import logging
 import math
-import threading
 
 from config import settings
 
@@ -16,52 +15,30 @@ logger = logging.getLogger(__name__)
 _model = None
 _model_loaded = False
 _model_available = False
-_lock = threading.Lock()
 
 
-def _load_model_worker(result: list):
-    """Worker function to load model in a thread."""
-    try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer(settings.EMBEDDING_MODEL)
-        result.append(model)
-    except Exception as e:
-        logger.warning("Model load failed: %s", type(e).__name__)
-
-
-def _try_load_model(timeout: int = 8) -> bool:
-    """Attempt to load model with timeout. Returns True if successful."""
+def _try_load_model() -> bool:
+    """Attempt to load the embedding model. Returns True if successful."""
     global _model, _model_loaded, _model_available
     if _model_loaded:
         return _model_available
+    _model_loaded = True
 
-    with _lock:
-        if _model_loaded:
-            return _model_available
-        _model_loaded = True
-
-        result = []
-        thread = threading.Thread(target=_load_model_worker, args=(result,), daemon=True)
-        thread.start()
-        thread.join(timeout=timeout)
-
-        if thread.is_alive():
-            logger.warning("Embedding model load timed out (%ds). Using hash-based fallback.", timeout)
-            _model_available = False
-            return False
-
-        if result:
-            _model = result[0]
-            _model_available = True
-            logger.info("Embedding model loaded (dim=%d)", _model.get_sentence_embedding_dimension())
-            return True
-        else:
-            logger.warning("Embedding model unavailable. Using hash-based fallback.")
-            _model_available = False
-            return False
+    try:
+        from sentence_transformers import SentenceTransformer
+        logger.info("Loading embedding model: %s", settings.EMBEDDING_MODEL)
+        _model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        _model_available = True
+        dim = _model.get_embedding_dimension()
+        logger.info("Embedding model loaded (dim=%d)", dim)
+        return True
+    except Exception as e:
+        logger.warning("Embedding model unavailable. Using hash-based fallback. Reason: %s", type(e).__name__)
+        _model_available = False
+        return False
 
 
-def _hash_embed(text: str, dim: int = 384) -> list[float]:
+def _hash_embed(text: str, dim: int = 512) -> list[float]:
     """Hash-based pseudo-embedding fallback."""
     h = hashlib.sha256(text.encode("utf-8")).digest()
     values = []
@@ -93,5 +70,5 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
 def get_embedding_dimension() -> int:
     if _try_load_model() and _model is not None:
-        return _model.get_sentence_embedding_dimension()
-    return 384
+        return _model.get_embedding_dimension()
+    return 512
