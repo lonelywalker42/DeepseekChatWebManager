@@ -1,7 +1,12 @@
-"""DeepSeek API calls for summarization, topic splitting, and card generation."""
+"""LLM API calls for summarization, topic splitting, and card generation.
+
+Uses OpenAI-compatible API — works with DeepSeek, OpenAI, Ollama, vLLM, etc.
+Configure via LLM_API_KEY, LLM_BASE_URL, LLM_MODEL environment variables.
+"""
 
 import json
 import logging
+import re
 from openai import OpenAI
 
 from config import settings
@@ -15,25 +20,77 @@ def _get_client() -> OpenAI:
     global _client
     if _client is None:
         _client = OpenAI(
-            api_key=settings.DEEPSEEK_API_KEY,
-            base_url=settings.DEEPSEEK_BASE_URL,
+            api_key=settings.LLM_API_KEY,
+            base_url=settings.LLM_BASE_URL,
         )
     return _client
 
 
+def _extract_json(text: str) -> dict | list:
+    """Extract JSON from LLM response text, handling markdown code blocks."""
+    # Try direct parse first
+    text = text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Try extracting from ```json ... ``` blocks
+    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            pass
+
+    # Try finding first { or [
+    for start_char, end_char in [('{', '}'), ('[', ']')]:
+        start = text.find(start_char)
+        if start == -1:
+            continue
+        # Find matching end
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == start_char:
+                depth += 1
+            elif text[i] == end_char:
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return json.loads(text[start:i + 1])
+                    except json.JSONDecodeError:
+                        break
+    raise ValueError(f"Could not extract JSON from response: {text[:200]}...")
+
+
 def _call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> str:
-    """Call DeepSeek API and return the assistant's response text."""
+    """Call LLM API and return the assistant's response text."""
     client = _get_client()
-    response = client.chat.completions.create(
-        model=settings.DEEPSEEK_MODEL,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=temperature,
-        response_format={"type": "json_object"},
-    )
-    return response.choices[0].message.content
+
+    # Try with json_object format first
+    try:
+        response = client.chat.completions.create(
+            model=settings.LLM_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=temperature,
+            response_format={"type": "json_object"},
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        # Some models don't support response_format, retry without it
+        logger.info("response_format not supported, retrying without it: %s", type(e).__name__)
+        response = client.chat.completions.create(
+            model=settings.LLM_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=temperature,
+        )
+        return response.choices[0].message.content
 
 
 def summarize_session(conversation_text: str) -> dict:
@@ -54,7 +111,7 @@ def summarize_session(conversation_text: str) -> dict:
 {conversation_text}"""
 
     result = _call_llm(system, user)
-    return json.loads(result)
+    return _extract_json(result)
 
 
 def split_topics(conversation_text: str, messages: list[dict]) -> list[dict]:
@@ -64,7 +121,6 @@ def split_topics(conversation_text: str, messages: list[dict]) -> list[dict]:
         "请将对话按语义话题切分，返回 JSON 格式的话题列表。"
     )
 
-    # Include message indices for reference
     indexed_text = ""
     for i, msg in enumerate(messages):
         role = msg.get("role", "unknown").upper()
@@ -91,8 +147,7 @@ def split_topics(conversation_text: str, messages: list[dict]) -> list[dict]:
 {indexed_text}"""
 
     result = _call_llm(system, user)
-    parsed = json.loads(result)
-    # Handle both {"topics": [...]} and [...] formats
+    parsed = _extract_json(result)
     if isinstance(parsed, dict):
         return parsed.get("topics", parsed.get("segments", []))
     return parsed
@@ -128,4 +183,4 @@ def generate_card(topic_text: str, topic_title: str) -> dict:
 {topic_text}"""
 
     result = _call_llm(system, user)
-    return json.loads(result)
+    return _extract_json(result)

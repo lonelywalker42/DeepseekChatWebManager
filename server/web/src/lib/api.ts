@@ -75,6 +75,13 @@ export const tasksApi = {
   get: (id: string) => request<any>(`/api/v1/tasks/${id}`),
 };
 
+// ── Settings ──
+export const settingsApi = {
+  getLLM: () => request<{ api_key_masked: string; base_url: string; model: string }>("/api/v1/settings/llm"),
+  updateLLM: (config: { api_key?: string; base_url?: string; model?: string }) =>
+    request<any>("/api/v1/settings/llm", { method: "PUT", body: JSON.stringify(config) }),
+};
+
 // ── Health ──
 export const healthApi = {
   check: () => request<any>("/health"),

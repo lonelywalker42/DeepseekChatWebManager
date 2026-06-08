@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { sessionsApi, tasksApi } from "@/lib/api";
 import { Upload, CheckCircle, XCircle, Loader2, SkipForward } from "lucide-react";
 
@@ -105,6 +105,15 @@ export default function UploadPage() {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const idRef = useRef(0);
+  const intervalsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+
+  // Cleanup all intervals on unmount
+  useEffect(() => {
+    return () => {
+      intervalsRef.current.forEach((id) => clearInterval(id));
+      intervalsRef.current.clear();
+    };
+  }, []);
 
   const handleFiles = async (files: FileList | File[]) => {
     for (const file of Array.from(files)) {
@@ -168,7 +177,7 @@ export default function UploadPage() {
 
           setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "processing" as const, action, detail, taskId: resp.task_id } : r));
 
-          // Poll task
+          // Poll task status
           if (resp.task_id) {
             const task_id = resp.task_id;
             const poll = setInterval(async () => {
@@ -176,15 +185,21 @@ export default function UploadPage() {
                 const task = await tasksApi.get(task_id);
                 if (task.status === "completed") {
                   clearInterval(poll);
+                  intervalsRef.current.delete(poll);
                   setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "done" as const, detail: task.progress } : r));
                 } else if (task.status === "failed") {
                   clearInterval(poll);
+                  intervalsRef.current.delete(poll);
                   setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "error" as const, detail: task.error || "处理失败" } : r));
                 } else {
                   setResults((prev) => prev.map((r) => r.id === id ? { ...r, detail: task.progress } : r));
                 }
-              } catch { clearInterval(poll); }
+              } catch {
+                clearInterval(poll);
+                intervalsRef.current.delete(poll);
+              }
             }, 2000);
+            intervalsRef.current.add(poll);
           }
         } catch (e: any) {
           setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "error" as const, detail: e.message } : r));

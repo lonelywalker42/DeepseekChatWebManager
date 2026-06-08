@@ -12,10 +12,10 @@ load_dotenv(_env_path)
 class Settings:
     """Application settings loaded from environment variables."""
 
-    # DeepSeek API
-    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
-    DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-    DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+    # LLM API (generic, defaults to DeepSeek for backward compat)
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY") or os.getenv("DEEPSEEK_API_KEY", "")
+    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL") or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    LLM_MODEL: str = os.getenv("LLM_MODEL") or os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 
     # Paths
     DATA_DIR: Path = Path(os.getenv("DATA_DIR", Path(__file__).parent / "data"))

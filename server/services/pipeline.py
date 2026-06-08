@@ -8,24 +8,87 @@ from difflib import SequenceMatcher
 
 from sqlalchemy.orm import Session as DbSession
 
-from models.db_models import Session as SessionModel, Card, Tag, CardTag
+from models.db_models import Session as SessionModel, Card, Tag, CardTag, Task
 from models.schemas import MessageInput
 from services import preprocessing, llm_service, embedding, vector_store
 from config import settings
 
 logger = logging.getLogger(__name__)
 
-# In-memory task tracking (MVP simplicity)
+# In-memory cache for fast reads; DB is the source of truth
 _tasks: dict[str, dict] = {}
 
 
+def _task_to_dict(task: Task) -> dict:
+    return {
+        "task_id": task.id,
+        "status": task.status,
+        "progress": task.progress or "",
+        "session_id": task.session_id,
+        "card_count": task.card_count or 0,
+        "error": task.error,
+    }
+
+
 def get_task_status(task_id: str) -> dict | None:
-    return _tasks.get(task_id)
+    """Get task status — check memory cache first, then DB."""
+    if task_id in _tasks:
+        return _tasks[task_id]
+    # Fallback to DB
+    from models.database import SessionLocal
+    db = SessionLocal()
+    try:
+        task = db.query(Task).filter(Task.id == task_id).first()
+        if task:
+            result = _task_to_dict(task)
+            _tasks[task_id] = result  # Cache it
+            return result
+    finally:
+        db.close()
+    return None
 
 
 def _update_task(task_id: str, **kwargs) -> None:
+    """Update task status in both memory cache and DB."""
+    # Update memory
     if task_id in _tasks:
         _tasks[task_id].update(kwargs)
+    # Update DB
+    from models.database import SessionLocal
+    db = SessionLocal()
+    try:
+        task = db.query(Task).filter(Task.id == task_id).first()
+        if task:
+            for key, value in kwargs.items():
+                if hasattr(task, key):
+                    setattr(task, key, value)
+            db.commit()
+    except Exception as e:
+        logger.warning("Failed to persist task %s: %s", task_id, e)
+    finally:
+        db.close()
+
+
+def create_task(db: DbSession, task_id: str, session_id: str) -> dict:
+    """Create a new task record in DB and memory cache."""
+    task_data = {
+        "task_id": task_id,
+        "status": "pending",
+        "progress": "等待处理...",
+        "session_id": session_id,
+        "card_count": 0,
+        "error": None,
+    }
+    _tasks[task_id] = task_data
+    db_task = Task(
+        id=task_id,
+        session_id=session_id,
+        status="pending",
+        progress="等待处理...",
+    )
+    db.add(db_task)
+    db.commit()
+    return task_data
 
 
 def _find_similar_tags(tag_name: str, existing_tags: list[str], threshold: float = 0.7) -> str | None:

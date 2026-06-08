@@ -203,14 +203,8 @@ async def upload_session(
 
         # Register task and run pipeline
         task_id = str(uuid.uuid4())
-        from services.pipeline import _tasks
-        _tasks[task_id] = {
-            "task_id": task_id,
-            "status": "pending",
-            "progress": "等待处理（增量更新）...",
-            "session_id": existing.id,
-            "card_count": 0,
-        }
+        from services.pipeline import create_task
+        create_task(db, task_id, existing.id)
         background_tasks.add_task(_run_pipeline, existing.id, upload.messages, task_id)
 
         return {
@@ -236,14 +230,8 @@ async def upload_session(
     db.add(session)
     db.commit()
 
-    from services.pipeline import _tasks
-    _tasks[task_id] = {
-        "task_id": task_id,
-        "status": "pending",
-        "progress": "等待处理...",
-        "session_id": session_id,
-        "card_count": 0,
-    }
+    from services.pipeline import create_task
+    create_task(db, task_id, session_id)
     background_tasks.add_task(_run_pipeline, session_id, upload.messages, task_id)
 
     return {

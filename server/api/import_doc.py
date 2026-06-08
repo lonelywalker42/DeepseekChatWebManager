@@ -56,25 +56,19 @@ async def import_document(
     db.commit()
 
     # Register task and run pipeline
-    from services.pipeline import _tasks, process_session
+    from services.pipeline import create_task, process_session
 
-    _tasks[task_id] = {
-        "task_id": task_id,
-        "status": "pending",
-        "progress": "等待处理（文档导入）...",
-        "session_id": session_id,
-        "card_count": 0,
-    }
+    create_task(db, task_id, session_id)
 
     def _run():
         from models.database import SessionLocal
+        from services.pipeline import _update_task
         sdb = SessionLocal()
         try:
             process_session(sdb, session_id, messages, task_id)
         except Exception as e:
             logger.error("Import pipeline failed: %s", e)
-            if task_id in _tasks:
-                _tasks[task_id].update(status="failed", error=str(e))
+            _update_task(task_id, status="failed", error=str(e))
         finally:
             sdb.close()
 

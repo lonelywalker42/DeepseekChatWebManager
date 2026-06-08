@@ -66,3 +66,17 @@ class CardTag(Base):
 
     card_id = Column(String, ForeignKey("cards.id", ondelete="CASCADE"), primary_key=True)
     tag_name = Column(String, ForeignKey("tags.name", ondelete="CASCADE"), primary_key=True)
+
+
+class Task(Base):
+    """Persistent task status — survives server restarts."""
+    __tablename__ = "tasks"
+
+    id = Column(String, primary_key=True)
+    session_id = Column(String, nullable=False)
+    status = Column(String, default="pending")  # pending / processing / completed / failed
+    progress = Column(String, default="")
+    card_count = Column(Integer, default=0)
+    error = Column(Text)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)

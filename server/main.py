@@ -13,6 +13,7 @@ from api.tasks import router as tasks_router
 from api.tags import router as tags_router
 from api.graph import router as graph_router
 from api.import_doc import router as import_router
+from api.settings import router as settings_router
 
 
 logging.basicConfig(
@@ -55,6 +56,7 @@ app.include_router(tasks_router)
 app.include_router(tags_router)
 app.include_router(graph_router)
 app.include_router(import_router)
+app.include_router(settings_router)
 
 
 @app.get("/health")
