@@ -15,18 +15,24 @@ npm run preview    # Preview production build
 
 **一键启动（Windows）：**
 ```bash
+cd server
 start.bat    # 自动启动后端 + 前端，首次运行自动安装依赖
+```
+
+**构建 Windows EXE：**
+```bash
+cd server
+build_exe.bat   # 构建单文件 EXE（~200-300MB），输出到 dist/
 ```
 
 **手动启动：**
 ```bash
 cd server
 python -m uvicorn main:app --reload --port 8000   # FastAPI 后端
-python -m streamlit run streamlit_app/app.py        # Streamlit 前端（可选）
 
 cd server/web
 npm run dev                                          # Next.js 前端（端口 3000）
-npm run build                                        # Next.js 生产构建
+npm run build                                        # Next.js 静态导出
 ```
 
 No test framework is configured. `tsc` is used only for type-checking (`noEmit: true`); Vite handles all bundling.
@@ -104,6 +110,8 @@ Streamlit   ──HTTP──> FastAPI 后端 ──> SQLite + ChromaDB
 - **嵌入降级** — 模型不可用时使用 hash-based 伪向量，管道不中断
 - **增量更新** — source_url 为主键，重复上传只处理新增消息
 - **DeepSeek mapping 格式** — JSON 解析支持树状结构（REQUEST/RESPONSE/THINK 片段）
+- **EXE 模式** — PyInstaller 打包时 `config.py` 自动检测 `sys.frozen`，数据目录指向 EXE 同级
+- **静态文件服务** — EXE 模式下 FastAPI 同时服务 API 和 Next.js 静态前端
 
 ## Core Types (`src/shared/types.ts`)
 

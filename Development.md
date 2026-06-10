@@ -127,7 +127,14 @@ RELATED_THRESHOLD=0.88
 
 **Windows 一键启动（推荐）：**
 ```bash
+cd server
 start.bat    # 自动安装依赖并启动后端 + 前端
+```
+
+**构建 Windows EXE：**
+```bash
+cd server
+build_exe.bat   # 构建单文件 EXE（~200-300MB）
 ```
 
 **手动启动：**
@@ -139,10 +146,6 @@ python -m uvicorn main:app --reload --port 8000
 # Next.js 前端
 cd server/web
 npm run dev
-
-# Streamlit 前端（可选）
-cd server
-python -m streamlit run streamlit_app/app.py
 ```
 
 ---
@@ -165,11 +168,12 @@ python -m streamlit run streamlit_app/app.py
 - 会话管理（列表、删除、重试、手动生成摘要）
 - 会话详情页（对话回放，支持 Markdown/LaTeX/代码高亮）
 - 知识卡片删除 + 跳转会话功能
-- AI 对话页面（调用 LLM，结束后保存为会话生成摘要和卡片）
+- AI 对话页面（流式响应，结束后保存为会话生成摘要和卡片）
 - 上传对话批处理（限制10并发，显示进度）
 - 导入页面状态持久化（sessionStorage）
 - Windows 一键启动脚本（start.bat / setup.bat）
 - Portable EXE 分发方案（build_portable.bat）
+- **Windows 单 EXE 打包**（PyInstaller，~200-300MB，数据保存到同目录 data/）
 - Docker 部署方案
 - 数据库自动迁移（新增 messages_json 列）
 

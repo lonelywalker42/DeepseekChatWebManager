@@ -105,7 +105,37 @@ build_portable.bat    # 构建 portable 版本到 dist/ 目录
 > **注意**：嵌入模型（~500MB）不包含在分发包中，首次运行时自动下载。
 > 用户需确保网络通畅，或手动下载模型放到 `~/.cache/torch/sentence_transformers/` 目录。
 
-### 方案三：手动部署
+### 方案四：Windows 单 EXE 打包
+
+使用 PyInstaller 打包为单个可执行文件，无需 Python 环境：
+
+```bash
+cd server
+build_exe.bat    # 构建单文件 EXE（~200-300MB）
+```
+
+构建流程：
+1. Next.js 静态导出（`npm run build` → `web/out/`）
+2. PyInstaller 打包（`--onefile` 模式）
+
+输出：`dist/DeepseekKnowledgeBase.exe`
+
+使用方式：
+1. 复制 EXE 到任意目录
+2. 同目录创建 `.env` 文件配置 `LLM_API_KEY`（或通过 Web 设置页面）
+3. 双击运行，浏览器访问 `http://localhost:8000`
+4. 数据自动保存到同目录 `data/`（SQLite + ChromaDB）
+
+特性：
+- 单文件，无需安装 Python/Node.js
+- FastAPI 同时服务 API 和前端静态文件
+- 数据目录 `data/` 相对于 EXE 位置
+- 嵌入模型不包含在 EXE 中（使用 hash-based 降级，或手动下载模型）
+
+> **注意**：EXE 不含 PyTorch/sentence-transformers（~2GB），嵌入使用 hash-based 降级。
+> 如需高质量嵌入，可手动下载模型放到 `~/.cache/torch/sentence_transformers/` 目录。
+
+### 方案五：手动部署
 
 ```bash
 # 1. 创建虚拟环境
@@ -165,9 +195,13 @@ server/
 │   ├── tasks.py             # 任务状态查询
 │   ├── tags.py              # 标签审核（确认/合并/删除）
 │   ├── graph.py             # 知识图谱（节点/边/邻居）
-│   ├── chat.py              # AI 对话 API
+│   ├── chat.py              # AI 对话 API（普通 + 流式）
 │   ├── import_doc.py        # 文档导入 API
 │   └── settings.py          # LLM 配置管理 API
+├── build_exe.spec           # PyInstaller 打包配置
+├── build_exe.bat            # EXE 构建脚本
+├── build_portable.bat       # Portable 构建脚本
+├── requirements-exe.txt     # EXE 专用依赖（排除 PyTorch/streamlit）
 ├── streamlit_app/           # Streamlit 前端（Phase 1，保留）
 │   ├── app.py               # 主页仪表盘
 │   └── pages/               # 上传、卡片、搜索、设置
@@ -198,8 +232,10 @@ server/
 ### AI 对话
 
 - 内置 Chat 页面，直接调用 LLM API 进行对话
+- **流式响应**（SSE），实时显示 LLM 输出
 - 支持 Markdown 渲染、LaTeX 公式、代码语法高亮
 - 对话结束后点击"结束并保存"，自动上传为会话并生成摘要和知识卡片
+- 对话状态持久化到 sessionStorage，切换页面不丢失
 - 自定义会话标题
 
 ### 上传对话
@@ -333,6 +369,7 @@ server/
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/api/v1/chat/` | 发送消息获取 LLM 回复 |
+| POST | `/api/v1/chat/stream` | 流式响应（SSE） |
 
 ### 其他
 
