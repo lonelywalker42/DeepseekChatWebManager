@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { sessionsApi, tasksApi } from "@/lib/api";
 import { Upload, CheckCircle, XCircle, Loader2, SkipForward } from "lucide-react";
+
+const STORAGE_KEY = "upload-results";
 
 interface UploadResult {
   id: number;
@@ -23,21 +25,17 @@ function walkMapping(mapping: Record<string, any>, nodeId: string): any[] {
 
   const msgs: any[] = [];
 
-  // If this node has a message, extract fragments
   if (node.message?.fragments) {
     for (const frag of node.message.fragments) {
       if (!frag.content) continue;
-      // REQUEST → user, RESPONSE → assistant, THINK → thinking
       if (frag.type === "REQUEST") {
         msgs.push({ role: "user", content: frag.content });
       } else if (frag.type === "RESPONSE") {
         msgs.push({ role: "assistant", content: frag.content });
       }
-      // THINK fragments are skipped for card generation (reasoning trace)
     }
   }
 
-  // Recurse into children
   if (node.children) {
     for (const childId of node.children) {
       msgs.push(...walkMapping(mapping, childId));
@@ -51,7 +49,6 @@ function walkMapping(mapping: Record<string, any>, nodeId: string): any[] {
 function parseDeepSeekExport(data: any): { title: string; messages: any[]; sourceUrl: string }[] {
   const conversations: { title: string; messages: any[]; sourceUrl: string }[] = [];
 
-  // Case 1: Array of conversations (typical DeepSeek export)
   if (Array.isArray(data)) {
     for (const conv of data) {
       if (!conv.mapping) continue;
@@ -65,7 +62,6 @@ function parseDeepSeekExport(data: any): { title: string; messages: any[]; sourc
     return conversations;
   }
 
-  // Case 2: Single conversation object with mapping
   if (data.mapping) {
     const title = data.title || "Untitled";
     const sourceUrl = data.id ? `https://chat.deepseek.com/c/${data.id}` : "";
@@ -76,7 +72,6 @@ function parseDeepSeekExport(data: any): { title: string; messages: any[]; sourc
     return conversations;
   }
 
-  // Case 3: Simple {title, messages} format (legacy/other exporters)
   if (data.messages && Array.isArray(data.messages)) {
     const messages = data.messages
       .filter((m: any) => m && m.role)
@@ -91,7 +86,6 @@ function parseDeepSeekExport(data: any): { title: string; messages: any[]; sourc
     return conversations;
   }
 
-  // Case 4: Plain array of messages
   if (Array.isArray(data) && data.length > 0 && data[0].role) {
     const messages = data.filter((m: any) => m.role).map((m: any) => ({ role: m.role, content: m.content || "" }));
     conversations.push({ title: "Imported Chat", messages, sourceUrl: "" });
@@ -101,11 +95,22 @@ function parseDeepSeekExport(data: any): { title: string; messages: any[]; sourc
 }
 
 export default function UploadPage() {
-  const [results, setResults] = useState<UploadResult[]>([]);
+  const [results, setResults] = useState<UploadResult[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const idRef = useRef(0);
   const intervalsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+
+  // Persist results to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(results));
+  }, [results]);
 
   // Cleanup all intervals on unmount
   useEffect(() => {
@@ -115,10 +120,34 @@ export default function UploadPage() {
     };
   }, []);
 
+  const pollTask = useCallback((taskId: string, resultId: number) => {
+    const poll = setInterval(async () => {
+      try {
+        const task = await tasksApi.get(taskId);
+        if (task.status === "completed") {
+          clearInterval(poll);
+          intervalsRef.current.delete(poll);
+          setResults((prev) => prev.map((r) => r.id === resultId ? { ...r, status: "done" as const, detail: task.progress } : r));
+        } else if (task.status === "failed") {
+          clearInterval(poll);
+          intervalsRef.current.delete(poll);
+          setResults((prev) => prev.map((r) => r.id === resultId ? { ...r, status: "error" as const, detail: task.error || "处理失败" } : r));
+        } else {
+          setResults((prev) => prev.map((r) => r.id === resultId ? { ...r, detail: task.progress } : r));
+        }
+      } catch {
+        clearInterval(poll);
+        intervalsRef.current.delete(poll);
+      }
+    }, 2000);
+    intervalsRef.current.add(poll);
+  }, []);
+
   const handleFiles = async (files: FileList | File[]) => {
     for (const file of Array.from(files)) {
       if (!file.name.endsWith(".json")) continue;
 
+      // Step 1: Parse JSON
       let data: any;
       try {
         const text = await file.text();
@@ -132,6 +161,7 @@ export default function UploadPage() {
         continue;
       }
 
+      // Step 2: Structure conversations
       const conversations = parseDeepSeekExport(data);
 
       if (conversations.length === 0) {
@@ -143,20 +173,32 @@ export default function UploadPage() {
         continue;
       }
 
-      // Process each conversation
-      for (const conv of conversations) {
+      // Step 3: Create result entries for all conversations (shows total count)
+      const convResults: UploadResult[] = conversations.map((conv) => {
         const id = ++idRef.current;
         const userCount = conv.messages.filter((m) => m.role === "user").length;
         const asstCount = conv.messages.filter((m) => m.role === "assistant").length;
+        return {
+          id,
+          name: file.name,
+          title: conv.title,
+          msgCount: conv.messages.length,
+          url: conv.sourceUrl,
+          status: "uploading" as const,
+          action: "",
+          detail: `${conv.messages.length} 条消息 (用户 ${userCount} / 助手 ${asstCount}) — 等待处理`,
+        };
+      });
 
-        setResults((prev) => [
-          {
-            id, name: file.name, title: conv.title, msgCount: conv.messages.length,
-            url: conv.sourceUrl, status: "uploading", action: "",
-            detail: `${conv.messages.length} 条消息 (用户 ${userCount} / 助手 ${asstCount})`,
-          },
-          ...prev,
-        ]);
+      setResults((prev) => [...convResults.reverse(), ...prev]);
+
+      // Step 4: Process each conversation sequentially
+      let processed = 0;
+      for (const conv of conversations) {
+        const result = convResults.find((r) => r.title === conv.title && r.msgCount === conv.messages.length);
+        if (!result) continue;
+
+        const progressLabel = `[${processed + 1}/${conversations.length}]`;
 
         try {
           const resp = await sessionsApi.upload({
@@ -171,39 +213,22 @@ export default function UploadPage() {
           const detail = resp.detail || "";
 
           if (action === "skipped") {
-            setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "skipped" as const, action, detail } : r));
+            setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "skipped" as const, action, detail: `${progressLabel} ${detail}` } : r));
+            processed++;
             continue;
           }
 
-          setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "processing" as const, action, detail, taskId: resp.task_id } : r));
+          setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "processing" as const, action, detail: `${progressLabel} ${detail}`, taskId: resp.task_id } : r));
 
           // Poll task status
           if (resp.task_id) {
-            const task_id = resp.task_id;
-            const poll = setInterval(async () => {
-              try {
-                const task = await tasksApi.get(task_id);
-                if (task.status === "completed") {
-                  clearInterval(poll);
-                  intervalsRef.current.delete(poll);
-                  setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "done" as const, detail: task.progress } : r));
-                } else if (task.status === "failed") {
-                  clearInterval(poll);
-                  intervalsRef.current.delete(poll);
-                  setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "error" as const, detail: task.error || "处理失败" } : r));
-                } else {
-                  setResults((prev) => prev.map((r) => r.id === id ? { ...r, detail: task.progress } : r));
-                }
-              } catch {
-                clearInterval(poll);
-                intervalsRef.current.delete(poll);
-              }
-            }, 2000);
-            intervalsRef.current.add(poll);
+            pollTask(resp.task_id, result.id);
           }
         } catch (e: any) {
-          setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "error" as const, detail: e.message } : r));
+          setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "error" as const, detail: `${progressLabel} ${e.message}` } : r));
         }
+
+        processed++;
       }
     }
   };
@@ -213,6 +238,18 @@ export default function UploadPage() {
     setDragging(false);
     if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   };
+
+  const clearResults = () => {
+    setResults([]);
+    sessionStorage.removeItem(STORAGE_KEY);
+  };
+
+  // Progress stats
+  const total = results.length;
+  const done = results.filter((r) => r.status === "done" || r.status === "skipped").length;
+  const failed = results.filter((r) => r.status === "error").length;
+  const processing = results.filter((r) => r.status === "processing" || r.status === "uploading").length;
+  const progressPct = total > 0 ? Math.round(((done + failed) / total) * 100) : 0;
 
   const statusIcon = (r: UploadResult) => {
     switch (r.status) {
@@ -274,10 +311,34 @@ export default function UploadPage() {
         </div>
       </div>
 
+      {/* Progress bar */}
+      {total > 0 && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-zinc-300 font-medium">处理进度</span>
+            <span className="text-zinc-500">{done + failed} / {total} 完成</span>
+          </div>
+          <div className="w-full bg-zinc-800 rounded-full h-2.5">
+            <div
+              className="bg-indigo-500 h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            ></div>
+          </div>
+          <div className="flex gap-4 text-xs text-zinc-500">
+            <span>✅ {done} 完成</span>
+            {failed > 0 && <span className="text-red-400">❌ {failed} 失败</span>}
+            {processing > 0 && <span className="text-indigo-400">⏳ {processing} 处理中</span>}
+          </div>
+        </div>
+      )}
+
       {/* Results */}
       {results.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-zinc-200">处理记录 ({results.length})</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-zinc-200">处理记录</h2>
+            <button onClick={clearResults} className="text-xs text-zinc-500 hover:text-zinc-300">清除记录</button>
+          </div>
           {results.map((r) => (
             <div key={r.id} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
               <div className="flex items-center gap-3">

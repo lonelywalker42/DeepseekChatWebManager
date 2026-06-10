@@ -364,3 +364,40 @@ def delete_session(session_id: str, db: DbSession = Depends(get_db)):
     db.delete(s)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/{session_id}/retry")
+async def retry_session(
+    session_id: str,
+    background_tasks: BackgroundTasks,
+    db: DbSession = Depends(get_db),
+):
+    """Re-process a session (delete old cards and re-run pipeline)."""
+    s = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if not s.messages_json:
+        raise HTTPException(status_code=400, detail="No stored messages to reprocess")
+
+    messages = [MessageInput(**m) for m in json.loads(s.messages_json)]
+
+    # Delete old cards
+    _delete_session_cards(db, session_id)
+
+    # Reset session state
+    s.processed_at = None
+    s.overall_summary = None
+    db.commit()
+
+    # Register task and run pipeline
+    task_id = str(uuid.uuid4())
+    from services.pipeline import create_task
+    create_task(db, task_id, session_id)
+    background_tasks.add_task(_run_pipeline, session_id, messages, task_id)
+
+    return {
+        "session_id": session_id,
+        "task_id": task_id,
+        "detail": f"重新处理，{len(messages)} 条消息",
+    }

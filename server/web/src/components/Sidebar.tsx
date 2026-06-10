@@ -12,11 +12,13 @@ import {
   Brain,
   MessageSquareText,
   FileText,
+  MessageSquare,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "仪表盘", icon: LayoutDashboard },
   { href: "/upload", label: "上传对话", icon: MessageSquareText },
+  { href: "/sessions", label: "会话管理", icon: MessageSquare },
   { href: "/cards", label: "知识卡片", icon: BookOpen },
   { href: "/graph", label: "知识图谱", icon: Network },
   { href: "/tags", label: "标签审核", icon: Tags },

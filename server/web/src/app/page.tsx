@@ -37,10 +37,10 @@ export default function Home() {
   };
 
   const statCards = [
-    { icon: MessageSquare, label: "会话", value: stats.sessions, color: "text-indigo-400" },
-    { icon: BookOpen, label: "知识卡片", value: stats.cards, color: "text-purple-400" },
-    { icon: Tags, label: "标签", value: stats.tags, color: "text-pink-400" },
-    { icon: Globe, label: "知识领域", value: stats.domains, color: "text-cyan-400" },
+    { icon: MessageSquare, label: "会话", value: stats.sessions, color: "text-indigo-400", href: "/sessions" },
+    { icon: BookOpen, label: "知识卡片", value: stats.cards, color: "text-purple-400", href: "/cards" },
+    { icon: Tags, label: "标签", value: stats.tags, color: "text-pink-400", href: "/tags" },
+    { icon: Globe, label: "知识领域", value: stats.domains, color: "text-cyan-400", href: null },
   ];
 
   if (error) {
@@ -71,13 +71,16 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {statCards.map((s) => (
-          <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 text-center card-hover">
-            <s.icon className={`w-8 h-8 mx-auto mb-2 ${s.color}`} />
-            <div className="text-3xl font-bold text-zinc-100">{loading ? "..." : s.value}</div>
-            <div className="text-sm text-zinc-500 mt-1">{s.label}</div>
-          </div>
-        ))}
+        {statCards.map((s) => {
+          const Card = s.href ? Link : "div";
+          return (
+            <Card key={s.label} href={s.href as any} className={`bg-zinc-900 border border-zinc-800 rounded-xl p-5 text-center card-hover ${s.href ? "cursor-pointer" : ""}`}>
+              <s.icon className={`w-8 h-8 mx-auto mb-2 ${s.color}`} />
+              <div className="text-3xl font-bold text-zinc-100">{loading ? "..." : s.value}</div>
+              <div className="text-sm text-zinc-500 mt-1">{s.label}</div>
+            </Card>
+          );
+        })}
       </div>
 
       <div>
