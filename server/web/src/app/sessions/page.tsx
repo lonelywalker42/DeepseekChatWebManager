@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { sessionsApi } from "@/lib/api";
-import { ArrowLeft, Trash2, RefreshCw, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trash2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -50,6 +50,17 @@ export default function SessionsPage() {
     }
   };
 
+  const handleSummarize = async (e: React.MouseEvent, sessionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await sessionsApi.summarize(sessionId);
+      alert("已提交摘要生成，请稍后刷新查看结果");
+    } catch (err: any) {
+      alert(`操作失败：${err.message}`);
+    }
+  };
+
   if (error) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -88,6 +99,7 @@ export default function SessionsPage() {
         <div className="space-y-2">
           {sessions.map((s) => {
             const isFailed = !s.processed_at && s.message_count > 0;
+            const noSummary = !s.overall_summary;
             return (
               <Link
                 key={s.id}
@@ -95,6 +107,15 @@ export default function SessionsPage() {
                 className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover relative group"
               >
                 <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {noSummary && (
+                    <button
+                      onClick={(e) => handleSummarize(e, s.id)}
+                      className="p-1.5 rounded-lg bg-zinc-800 hover:bg-indigo-900/50 transition-colors"
+                      title="生成摘要"
+                    >
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                    </button>
+                  )}
                   {isFailed && (
                     <button
                       onClick={(e) => handleRetry(e, s.id)}

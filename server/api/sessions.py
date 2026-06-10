@@ -401,3 +401,48 @@ async def retry_session(
         "task_id": task_id,
         "detail": f"重新处理，{len(messages)} 条消息",
     }
+
+
+def _run_summary(session_id: str, messages: list[MessageInput]):
+    """Background task to regenerate session summary only."""
+    from models.database import SessionLocal
+    from services import preprocessing, llm_service
+    db = SessionLocal()
+    try:
+        cleaned_msgs, conversation_text = preprocessing.preprocess(messages)
+        summary_data = llm_service.summarize_session(conversation_text)
+
+        session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+        if session:
+            session.title = summary_data.get("session_title", session.title)
+            session.overall_summary = summary_data.get("overall_summary", "")
+            session.knowledge_domain = json.dumps(summary_data.get("knowledge_domain", []), ensure_ascii=False)
+            db.commit()
+            logger.info("Summary regenerated for session %s", session_id)
+    except Exception as e:
+        logger.error("Summary regeneration failed for session %s: %s", session_id, e)
+    finally:
+        db.close()
+
+
+@router.post("/{session_id}/summarize")
+async def summarize_session(
+    session_id: str,
+    background_tasks: BackgroundTasks,
+    db: DbSession = Depends(get_db),
+):
+    """Regenerate summary for a session (does not touch cards)."""
+    s = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if not s.messages_json:
+        raise HTTPException(status_code=400, detail="No stored messages")
+
+    messages = [MessageInput(**m) for m in json.loads(s.messages_json)]
+    background_tasks.add_task(_run_summary, session_id, messages)
+
+    return {
+        "session_id": session_id,
+        "detail": f"正在生成摘要（{len(messages)} 条消息），请稍后刷新",
+    }

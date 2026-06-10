@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { sessionsApi, cardsApi } from "@/lib/api";
-import { ArrowLeft, User, Bot, BookOpen } from "lucide-react";
+import { ArrowLeft, User, Bot, BookOpen, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -56,6 +56,21 @@ export default function SessionDetailPage() {
         </div>
         {session.overall_summary && (
           <p className="text-zinc-400 mt-3">{session.overall_summary}</p>
+        )}
+        {!session.overall_summary && (
+          <button
+            onClick={async () => {
+              try {
+                await sessionsApi.summarize(id);
+                alert("已提交摘要生成，请稍后刷新查看结果");
+              } catch (err: any) {
+                alert(`操作失败：${err.message}`);
+              }
+            }}
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/20 text-sm text-indigo-400 transition-colors"
+          >
+            <Sparkles className="w-4 h-4" /> 生成摘要
+          </button>
         )}
         {session.knowledge_domain?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">

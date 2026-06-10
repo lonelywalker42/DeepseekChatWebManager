@@ -25,6 +25,7 @@ export const sessionsApi = {
   delete: (id: string) => request<any>(`/api/v1/sessions/${id}`, { method: "DELETE" }),
   upload: (data: any) => request<any>("/api/v1/sessions/upload", { method: "POST", body: JSON.stringify(data) }),
   retry: (id: string) => request<any>(`/api/v1/sessions/${id}/retry`, { method: "POST" }),
+  summarize: (id: string) => request<any>(`/api/v1/sessions/${id}/summarize`, { method: "POST" }),
 };
 
 // ── Cards ──
