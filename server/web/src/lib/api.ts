@@ -94,3 +94,12 @@ export const settingsApi = {
 export const healthApi = {
   check: () => request<any>("/health"),
 };
+
+// ── Chat ──
+export const chatApi = {
+  send: (messages: { role: string; content: string }[], systemPrompt?: string) =>
+    request<{ reply: string }>("/api/v1/chat/", {
+      method: "POST",
+      body: JSON.stringify({ messages, system_prompt: systemPrompt }),
+    }),
+};

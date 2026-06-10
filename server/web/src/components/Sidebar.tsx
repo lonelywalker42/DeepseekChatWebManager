@@ -13,10 +13,12 @@ import {
   MessageSquareText,
   FileText,
   MessageSquare,
+  MessageCircle,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/chat", label: "AI 对话", icon: MessageCircle },
   { href: "/upload", label: "上传对话", icon: MessageSquareText },
   { href: "/sessions", label: "会话管理", icon: MessageSquare },
   { href: "/cards", label: "知识卡片", icon: BookOpen },

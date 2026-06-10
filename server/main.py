@@ -14,6 +14,7 @@ from api.tags import router as tags_router
 from api.graph import router as graph_router
 from api.import_doc import router as import_router
 from api.settings import router as settings_router
+from api.chat import router as chat_router
 
 
 logging.basicConfig(
@@ -57,6 +58,7 @@ app.include_router(tags_router)
 app.include_router(graph_router)
 app.include_router(import_router)
 app.include_router(settings_router)
+app.include_router(chat_router)
 
 
 @app.get("/health")

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cardsApi } from "@/lib/api";
-import { Search, Filter, Trash2 } from "lucide-react";
+import { Search, Filter, Trash2, MessageSquare } from "lucide-react";
 
 export default function CardsPage() {
   const [cards, setCards] = useState<any[]>([]);
@@ -116,6 +116,15 @@ export default function CardsPage() {
               </div>
               {card.category_path && (
                 <div className="text-xs text-zinc-600 mt-2">📁 {card.category_path}</div>
+              )}
+              {card.session_id && (
+                <Link
+                  href={`/sessions/${card.session_id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-indigo-400 mt-1.5 transition-colors"
+                >
+                  <MessageSquare className="w-3 h-3" /> 查看会话
+                </Link>
               )}
             </Link>
           ))}

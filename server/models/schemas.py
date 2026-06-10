@@ -55,6 +55,7 @@ class CardResponse(BaseModel):
 
 class CardListItem(BaseModel):
     id: str
+    session_id: str
     title: str
     summary: Optional[str] = None
     difficulty: Optional[str] = None

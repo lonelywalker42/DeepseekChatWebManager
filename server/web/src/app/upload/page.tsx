@@ -192,43 +192,55 @@ export default function UploadPage() {
 
       setResults((prev) => [...convResults.reverse(), ...prev]);
 
-      // Step 4: Process each conversation sequentially
+      // Step 4: Process conversations in batches of 10
+      const BATCH_SIZE = 10;
       let processed = 0;
-      for (const conv of conversations) {
-        const result = convResults.find((r) => r.title === conv.title && r.msgCount === conv.messages.length);
-        if (!result) continue;
 
-        const progressLabel = `[${processed + 1}/${conversations.length}]`;
+      for (let batchStart = 0; batchStart < conversations.length; batchStart += BATCH_SIZE) {
+        const batch = conversations.slice(batchStart, batchStart + BATCH_SIZE);
+        const batchLabel = `批次 ${Math.floor(batchStart / BATCH_SIZE) + 1}/${Math.ceil(conversations.length / BATCH_SIZE)}`;
 
-        try {
-          const resp = await sessionsApi.upload({
-            title: conv.title,
-            source_type: "deepseek",
-            source_url: conv.sourceUrl || null,
-            original_filename: file.name,
-            messages: conv.messages,
-          });
+        // Process batch concurrently
+        const batchPromises = batch.map(async (conv, batchIdx) => {
+          const globalIdx = batchStart + batchIdx;
+          const result = convResults.find((r) => r.title === conv.title && r.msgCount === conv.messages.length);
+          if (!result) return;
 
-          const action = resp.action || "created";
-          const detail = resp.detail || "";
+          const progressLabel = `[${globalIdx + 1}/${conversations.length}]`;
 
-          if (action === "skipped") {
-            setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "skipped" as const, action, detail: `${progressLabel} ${detail}` } : r));
-            processed++;
-            continue;
+          try {
+            const resp = await sessionsApi.upload({
+              title: conv.title,
+              source_type: "deepseek",
+              source_url: conv.sourceUrl || null,
+              original_filename: file.name,
+              messages: conv.messages,
+            });
+
+            const action = resp.action || "created";
+            const detail = resp.detail || "";
+
+            if (action === "skipped") {
+              setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "skipped" as const, action, detail: `${progressLabel} ${detail}` } : r));
+              processed++;
+              return;
+            }
+
+            setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "processing" as const, action, detail: `${progressLabel} ${batchLabel} — ${detail}`, taskId: resp.task_id } : r));
+
+            // Poll task status
+            if (resp.task_id) {
+              pollTask(resp.task_id, result.id);
+            }
+          } catch (e: any) {
+            setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "error" as const, detail: `${progressLabel} ${e.message}` } : r));
           }
 
-          setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "processing" as const, action, detail: `${progressLabel} ${detail}`, taskId: resp.task_id } : r));
+          processed++;
+        });
 
-          // Poll task status
-          if (resp.task_id) {
-            pollTask(resp.task_id, result.id);
-          }
-        } catch (e: any) {
-          setResults((prev) => prev.map((r) => r.id === result.id ? { ...r, status: "error" as const, detail: `${progressLabel} ${e.message}` } : r));
-        }
-
-        processed++;
+        // Wait for batch to complete before starting next batch
+        await Promise.all(batchPromises);
       }
     }
   };

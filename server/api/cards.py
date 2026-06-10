@@ -42,6 +42,7 @@ def _card_to_list_item(card: Card, db: DbSession) -> CardListItem:
     tags = [ct.tag_name for ct in db.query(CardTag).filter(CardTag.card_id == card.id).all()]
     return CardListItem(
         id=card.id,
+        session_id=card.session_id,
         title=card.title,
         summary=card.summary,
         difficulty=card.difficulty,
