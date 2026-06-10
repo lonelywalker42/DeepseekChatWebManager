@@ -56,6 +56,71 @@ npm run dev
 | API 文档 | http://localhost:8000/docs |
 | Streamlit 前端（旧） | http://localhost:8501 |
 
+## 部署方案
+
+### 方案一：Docker 部署（推荐）
+
+```bash
+cd server
+
+# 构建并启动
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+
+# 停止
+docker compose down
+```
+
+首次启动会自动：
+- 构建 Python 镜像（含 PyTorch + 嵌入模型）
+- 下载 bge-small-zh 嵌入模型
+- 持久化数据到 `./data` 目录
+
+### 方案二：Windows 一键安装
+
+```bash
+cd server
+setup.bat    # 自动创建 venv、安装依赖、下载模型
+start.bat    # 启动服务
+```
+
+### 方案三：手动部署
+
+```bash
+# 1. 创建虚拟环境
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # Linux/Mac
+
+# 2. 安装依赖
+pip install -r requirements.txt
+
+# 3. 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入 LLM_API_KEY
+
+# 4. 启动后端
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
+
+# 5. 启动前端（另一个终端）
+cd web && npm install && npm run dev
+```
+
+### 依赖说明
+
+| 依赖 | 用途 | 体积 |
+|------|------|------|
+| sentence-transformers | 本地嵌入模型 | ~2GB（含 PyTorch） |
+| chromadb | 向量存储 | ~200MB |
+| fastapi + uvicorn | Web 框架 | ~50MB |
+| pymupdf | PDF 解析 | ~50MB |
+| openai | LLM API 调用 | ~10MB |
+
+> **注意**：`sentence-transformers` 依赖 PyTorch，首次安装约需 2GB 空间。
+> 如不需要本地嵌入，可移除该依赖，系统会自动降级为 hash-based 伪向量。
+
 ## 项目结构
 
 ```
