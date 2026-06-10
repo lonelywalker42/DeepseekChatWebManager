@@ -5,14 +5,20 @@ import { graphApi } from "@/lib/api";
 
 export default function GraphPage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const networkRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ nodes: 0, edges: 0 });
+  const [showTypes, setShowTypes] = useState({ session: true, card: true, tag: true });
+  const [allNodes, setAllNodes] = useState<any[]>([]);
+  const [allEdges, setAllEdges] = useState<any[]>([]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     Promise.all([graphApi.nodes(), graphApi.edges()])
       .then(([nodes, edges]) => {
+        setAllNodes(nodes);
+        setAllEdges(edges);
         setStats({ nodes: nodes.length, edges: edges.length });
 
         if (nodes.length === 0) {
@@ -20,88 +26,153 @@ export default function GraphPage() {
           return;
         }
 
-        // Dynamic import for vis-network (client-side only)
-        Promise.all([import("vis-network"), import("vis-data")]).then(([{ Network }, { DataSet }]) => {
-          const nodeColors: Record<string, string> = {
-            session: "#6366f1",
-            card: "#a855f7",
-            tag: "#ec4899",
-          };
-
-          const visNodes = new DataSet(
-            nodes.map((n: any) => ({
-              id: n.id,
-              label: n.label,
-              color: { background: nodeColors[n.type] || "#71717a", border: nodeColors[n.type] || "#71717a" },
-              font: { color: "#e4e4e7", size: 12 },
-              shape: n.type === "tag" ? "diamond" : n.type === "session" ? "square" : "dot",
-              size: n.type === "session" ? 25 : n.type === "tag" ? 18 : 20,
-              title: `${n.type}: ${n.label}`,
-            }))
-          );
-
-          const visEdges = new DataSet(
-            edges.map((e: any, i: number) => ({
-              id: i,
-              from: e.source,
-              to: e.target,
-              color: { color: "#3f3f46", highlight: "#6366f1" },
-              arrows: e.type === "VERSION_OF" ? "to" : undefined,
-              dashes: e.type === "TAGGED",
-              width: e.type === "VERSION_OF" ? 2 : 1,
-            }))
-          );
-
-          const nodeCount = nodes.length;
-          const isLarge = nodeCount > 200;
-
-          new Network(
-            containerRef.current!,
-            { nodes: visNodes, edges: visEdges },
-            {
-              physics: {
-                solver: "forceAtlas2Based",
-                forceAtlas2Based: {
-                  gravitationalConstant: isLarge ? -60 : -40,
-                  centralGravity: 0.01,
-                  springLength: isLarge ? 150 : 120,
-                  damping: 0.8,
-                },
-                stabilization: {
-                  enabled: true,
-                  iterations: isLarge ? 50 : 100,
-                  updateInterval: 50,
-                },
-                adaptiveTimestep: true,
-              },
-              interaction: {
-                hover: true,
-                tooltipDelay: 200,
-                hideEdgesOnDrag: isLarge,
-                hideNodesOnDrag: isLarge,
-              },
-              nodes: {
-                borderWidth: 2,
-                shadow: !isLarge,
-                font: { face: "Inter, system-ui, sans-serif" },
-              },
-              edges: {
-                smooth: { enabled: !isLarge, type: "continuous", roundness: 0.5 },
-              },
-              layout: {
-                improvedLayout: !isLarge,
-              },
-            }
-          );
-
-          setLoading(false);
-        });
+        renderGraph(nodes, edges);
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
       });
   }, []);
+
+  const renderGraph = (nodes: any[], edges: any[]) => {
+    if (!containerRef.current) return;
+
+    Promise.all([import("vis-network"), import("vis-data")]).then(([{ Network }, { DataSet }]) => {
+      const nodeColors: Record<string, string> = {
+        session: "#6366f1",
+        card: "#a855f7",
+        tag: "#ec4899",
+      };
+
+      const nodeShapes: Record<string, string> = {
+        session: "square",
+        card: "dot",
+        tag: "diamond",
+      };
+
+      const nodeSizes: Record<string, number> = {
+        session: 30,
+        card: 22,
+        tag: 16,
+      };
+
+      const filteredNodes = nodes.filter((n: any) => showTypes[n.type as keyof typeof showTypes]);
+      const filteredNodeIds = new Set(filteredNodes.map((n: any) => n.id));
+      const filteredEdges = edges.filter((e: any) => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target));
+
+      const visNodes = new DataSet(
+        filteredNodes.map((n: any) => ({
+          id: n.id,
+          label: n.label.length > 15 ? n.label.slice(0, 15) + "..." : n.label,
+          fullLabel: n.label,
+          color: {
+            background: nodeColors[n.type] || "#71717a",
+            border: nodeColors[n.type] || "#71717a",
+            highlight: { background: "#818cf8", border: "#6366f1" },
+          },
+          font: { color: "#e4e4e7", size: 11, face: "Inter, system-ui, sans-serif" },
+          shape: nodeShapes[n.type] || "dot",
+          size: nodeSizes[n.type] || 20,
+          title: `<div style="max-width:200px"><b>${n.type === "session" ? "📋 会话" : n.type === "card" ? "🃏 卡片" : "🏷️ 标签"}</b><br/>${n.label}</div>`,
+          type: n.type,
+        }))
+      );
+
+      const visEdges = new DataSet(
+        filteredEdges.map((e: any, i: number) => ({
+          id: i,
+          from: e.source,
+          to: e.target,
+          color: {
+            color: "#3f3f46",
+            highlight: "#6366f1",
+            opacity: 0.6,
+          },
+          arrows: e.type === "VERSION_OF" ? "to" : undefined,
+          dashes: e.type === "TAGGED",
+          width: e.type === "VERSION_OF" ? 2 : 1,
+          smooth: { type: "continuous", roundness: 0.3 },
+        }))
+      );
+
+      const nodeCount = filteredNodes.length;
+      const isLarge = nodeCount > 150;
+
+      if (networkRef.current) {
+        networkRef.current.destroy();
+      }
+
+      networkRef.current = new Network(
+        containerRef.current!,
+        { nodes: visNodes, edges: visEdges },
+        {
+          physics: {
+            solver: "forceAtlas2Based",
+            forceAtlas2Based: {
+              gravitationalConstant: isLarge ? -80 : -50,
+              centralGravity: 0.008,
+              springLength: isLarge ? 180 : 140,
+              springConstant: 0.02,
+              damping: 0.85,
+            },
+            stabilization: {
+              enabled: true,
+              iterations: isLarge ? 40 : 80,
+              updateInterval: 25,
+            },
+            adaptiveTimestep: true,
+          },
+          interaction: {
+            hover: true,
+            tooltipDelay: 150,
+            hideEdgesOnDrag: isLarge,
+            hideNodesOnDrag: isLarge,
+            zoomView: true,
+            dragView: true,
+            multiselect: true,
+            navigationButtons: true,
+            keyboard: { enabled: true },
+          },
+          nodes: {
+            borderWidth: 2,
+            shadow: { enabled: !isLarge, color: "rgba(0,0,0,0.3)", size: 8, x: 2, y: 2 },
+            font: { face: "Inter, system-ui, sans-serif" },
+          },
+          edges: {
+            smooth: { enabled: true, type: "continuous", roundness: 0.3 },
+          },
+          layout: {
+            improvedLayout: !isLarge,
+          },
+        }
+      );
+
+      // Click to show full label
+      networkRef.current.on("click", (params: any) => {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const node = visNodes.get(nodeId);
+          if (node) {
+            visNodes.update({ id: nodeId, label: node.fullLabel || node.label });
+            setTimeout(() => {
+              const label = node.fullLabel || node.label;
+              if (label.length > 15) {
+                visNodes.update({ id: nodeId, label: label.slice(0, 15) + "..." });
+              }
+            }, 3000);
+          }
+        }
+      });
+
+      setLoading(false);
+    });
+  };
+
+  const toggleType = (type: keyof typeof showTypes) => {
+    const newShowTypes = { ...showTypes, [type]: !showTypes[type] };
+    setShowTypes(newShowTypes);
+    renderGraph(allNodes, allEdges);
+  };
 
   return (
     <div className="space-y-4">
@@ -112,16 +183,33 @@ export default function GraphPage() {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex gap-4 text-sm">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-indigo-500"></span> 会话</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-purple-500"></span> 卡片</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-pink-500" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }}></span> 标签</span>
-      </div>
+      {/* Controls */}
+      <div className="flex items-center gap-4">
+        <div className="flex gap-2">
+          {[
+            { key: "session" as const, label: "会话", color: "bg-indigo-500", count: allNodes.filter(n => n.type === "session").length },
+            { key: "card" as const, label: "卡片", color: "bg-purple-500", count: allNodes.filter(n => n.type === "card").length },
+            { key: "tag" as const, label: "标签", color: "bg-pink-500", count: allNodes.filter(n => n.type === "tag").length },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => toggleType(t.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                showTypes[t.key]
+                  ? "bg-zinc-800 text-zinc-200 border border-zinc-700"
+                  : "bg-zinc-900 text-zinc-500 border border-zinc-800"
+              }`}
+            >
+              <span className={`w-2.5 h-2.5 rounded ${t.color} ${showTypes[t.key] ? "" : "opacity-30"}`}></span>
+              {t.label} ({t.count})
+            </button>
+          ))}
+        </div>
 
-      {loading && (
-        <div className="text-center text-zinc-500 py-8">加载图谱数据...</div>
-      )}
+        {loading && (
+          <div className="text-sm text-zinc-500 animate-pulse">加载中...</div>
+        )}
+      </div>
 
       {!loading && stats.nodes === 0 && (
         <div className="text-center text-zinc-500 py-12 bg-zinc-900 rounded-xl border border-zinc-800">
@@ -132,7 +220,7 @@ export default function GraphPage() {
       <div
         ref={containerRef}
         className="w-full bg-zinc-900 border border-zinc-800 rounded-xl"
-        style={{ height: "calc(100vh - 200px)" }}
+        style={{ height: "calc(100vh - 220px)" }}
       />
     </div>
   );

@@ -225,16 +225,25 @@ def process_session(
         )
         db.add(card)
 
-        # Process tags
+        # Process tags (limit to max 5 per card, deduplicate)
         suggested_tags = card_data.get("suggested_tags", [])
+        seen_tags = set()
+        tag_count = 0
+        max_tags_per_card = 5
+
         for tag_name in suggested_tags:
             tag_name = tag_name.strip()
-            if not tag_name:
+            if not tag_name or tag_count >= max_tags_per_card:
                 continue
 
             # Normalize: find similar existing tag
             matched_tag = _find_similar_tags(tag_name, existing_tags)
             final_tag_name = matched_tag or tag_name
+
+            # Skip if we already linked this tag to this card
+            if final_tag_name.lower() in seen_tags:
+                continue
+            seen_tags.add(final_tag_name.lower())
 
             # Upsert tag
             tag = db.query(Tag).filter(Tag.name == final_tag_name).first()
@@ -247,6 +256,7 @@ def process_session(
 
             # Link card to tag
             db.add(CardTag(card_id=card_id, tag_name=final_tag_name))
+            tag_count += 1
 
         # Vectorize and find similar cards
         try:
