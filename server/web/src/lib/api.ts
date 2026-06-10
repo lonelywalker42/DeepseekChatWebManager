@@ -16,6 +16,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const sessionsApi = {
   list: () => request<any[]>("/api/v1/sessions/"),
   get: (id: string) => request<any>(`/api/v1/sessions/${id}`),
+  messages: (id: string) => request<any>(`/api/v1/sessions/${id}/messages`),
   delete: (id: string) => request<any>(`/api/v1/sessions/${id}`, { method: "DELETE" }),
   upload: (data: any) => request<any>("/api/v1/sessions/upload", { method: "POST", body: JSON.stringify(data) }),
 };

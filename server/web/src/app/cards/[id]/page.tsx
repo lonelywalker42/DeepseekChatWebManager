@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { cardsApi } from "@/lib/api";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, Trash2 } from "lucide-react";
 
 export default function CardDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [card, setCard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
@@ -15,6 +16,17 @@ export default function CardDetailPage() {
   useEffect(() => {
     cardsApi.get(id).then(setCard).catch(console.error).finally(() => setLoading(false));
   }, [id]);
+
+  const handleDelete = async () => {
+    if (!confirm("确定要删除这张知识卡片吗？此操作不可撤销。")) return;
+    try {
+      await cardsApi.delete(id);
+      router.push("/cards");
+    } catch (err) {
+      console.error(err);
+      alert("删除失败");
+    }
+  };
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -39,11 +51,20 @@ export default function CardDetailPage() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <div className="flex items-start justify-between mb-3">
           <h1 className="text-2xl font-bold text-zinc-100">{card.title}</h1>
-          {card.difficulty && (
-            <span className={`badge ${card.difficulty === "初级" ? "badge-green" : card.difficulty === "中级" ? "badge-yellow" : "badge-red"}`}>
-              {card.difficulty}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {card.difficulty && (
+              <span className={`badge ${card.difficulty === "初级" ? "badge-green" : card.difficulty === "中级" ? "badge-yellow" : "badge-red"}`}>
+                {card.difficulty}
+              </span>
+            )}
+            <button
+              onClick={handleDelete}
+              className="p-2 rounded-lg bg-zinc-800 hover:bg-red-900/50 transition-colors"
+              title="删除卡片"
+            >
+              <Trash2 className="w-4 h-4 text-zinc-400 hover:text-red-400" />
+            </button>
+          </div>
         </div>
         {card.summary && <p className="text-zinc-400 text-lg mb-4">{card.summary}</p>}
         <div className="flex flex-wrap gap-2">

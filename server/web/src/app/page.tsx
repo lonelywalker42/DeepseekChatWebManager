@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { sessionsApi, cardsApi, tagsApi } from "@/lib/api";
 import { BookOpen, MessageSquare, Tags, Globe } from "lucide-react";
 
@@ -54,13 +55,13 @@ export default function Home() {
         ) : (
           <div className="space-y-2">
             {sessions.map((s) => (
-              <div key={s.id} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover">
+              <Link key={s.id} href={`/sessions/${s.id}`} className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover">
                 <div className="font-medium text-zinc-200">{s.title}</div>
                 <div className="text-sm text-zinc-500 mt-1">
                   💬 {s.message_count} 条消息 · 🃏 {s.card_count} 张卡片 · 🕐 {s.uploaded_at?.slice(0, 19)}
                 </div>
                 {s.overall_summary && <div className="text-sm text-zinc-400 mt-2">{s.overall_summary}</div>}
-              </div>
+              </Link>
             ))}
           </div>
         )}

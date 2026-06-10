@@ -23,6 +23,7 @@ class Session(Base):
     overall_summary = Column(Text)
     knowledge_domain = Column(String)  # JSON array as string
     message_count = Column(Integer, default=0)
+    messages_json = Column(Text)  # JSON-serialized messages for replay
     uploaded_at = Column(DateTime, default=_utcnow)
     processed_at = Column(DateTime)
 

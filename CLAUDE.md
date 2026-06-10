@@ -12,6 +12,13 @@ npm run preview    # Preview production build
 ```
 
 ### 知识库后端
+
+**一键启动（Windows）：**
+```bash
+start.bat    # 自动启动后端 + 前端，首次运行自动安装依赖
+```
+
+**手动启动：**
 ```bash
 cd server
 python -m uvicorn main:app --reload --port 8000   # FastAPI 后端

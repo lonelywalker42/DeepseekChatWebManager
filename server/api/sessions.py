@@ -198,6 +198,7 @@ async def upload_session(
         # Update session record
         existing.message_count = new_count
         existing.title = upload.title or existing.title
+        existing.messages_json = json.dumps([m.model_dump() for m in upload.messages], ensure_ascii=False)
         existing.processed_at = None  # Reset
         db.commit()
 
@@ -225,6 +226,7 @@ async def upload_session(
         source_url=upload.source_url,
         original_filename=upload.original_filename,
         message_count=len(upload.messages),
+        messages_json=json.dumps([m.model_dump() for m in upload.messages], ensure_ascii=False),
         uploaded_at=datetime.now(timezone.utc),
     )
     db.add(session)
@@ -339,6 +341,16 @@ def get_session(session_id: str, db: DbSession = Depends(get_db)):
         uploaded_at=s.uploaded_at,
         processed_at=s.processed_at,
     )
+
+
+@router.get("/{session_id}/messages")
+def get_session_messages(session_id: str, db: DbSession = Depends(get_db)):
+    """Get raw messages for a session (for conversation replay)."""
+    s = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    messages = json.loads(s.messages_json) if s.messages_json else []
+    return {"session_id": session_id, "title": s.title, "messages": messages}
 
 
 @router.delete("/{session_id}")

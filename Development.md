@@ -71,9 +71,10 @@ Streamlit   ──HTTP──> FastAPI 后端 ──> SQLite + ChromaDB
 | sentence-transformers | 嵌入模型（bge-small-zh-v1.5） |
 | OpenAI SDK | LLM API 调用（兼容 DeepSeek/OpenAI/Ollama） |
 | PyMuPDF | PDF 解析 |
-| Next.js 14 | 前端框架（App Router） |
+| Next.js 16 | 前端框架（App Router + Turbopack） |
 | Tailwind CSS | 前端样式 |
-| vis-network | 知识图谱可视化 |
+| vis-network + vis-data | 知识图谱可视化 |
+| react-markdown + remark-math + rehype-katex | Markdown/LaTeX 渲染（会话回放） |
 
 ### 核心模块
 
@@ -124,6 +125,12 @@ RELATED_THRESHOLD=0.88
 
 ### 启动命令
 
+**Windows 一键启动（推荐）：**
+```bash
+start.bat    # 自动安装依赖并启动后端 + 前端
+```
+
+**手动启动：**
 ```bash
 # 后端
 cd server
@@ -150,11 +157,16 @@ python -m streamlit run streamlit_app/app.py
 
 ### Phase 2 ✅ 完整知识库
 - Next.js 前端（卡片流、详情、图谱、标签审核、文档导入）
-- 知识图谱 API（节点/边/邻居查询）
+- 知识图谱 API（节点/边/邻居查询）+ 自适应性能优化
 - 标签审核 API（确认/合并/删除）
 - 外部文档导入（MD/PDF/TXT）
 - 任务持久化
 - LLM 配置可替换
+- 会话详情页（对话回放，支持 Markdown/LaTeX/代码高亮）
+- 知识卡片删除功能
+- 导入页面状态持久化（sessionStorage）
+- Windows 一键启动脚本（start.bat）
+- 数据库自动迁移（新增 messages_json 列）
 
 ### Phase 3 计划
 - Chrome 扩展集成（推送到本地服务）

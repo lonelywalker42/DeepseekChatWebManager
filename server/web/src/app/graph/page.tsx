@@ -21,7 +21,7 @@ export default function GraphPage() {
         }
 
         // Dynamic import for vis-network (client-side only)
-        import("vis-network").then(({ Network, DataSet }) => {
+        Promise.all([import("vis-network"), import("vis-data")]).then(([{ Network }, { DataSet }]) => {
           const nodeColors: Record<string, string> = {
             session: "#6366f1",
             card: "#a855f7",
@@ -52,17 +52,45 @@ export default function GraphPage() {
             }))
           );
 
+          const nodeCount = nodes.length;
+          const isLarge = nodeCount > 200;
+
           new Network(
             containerRef.current!,
             { nodes: visNodes, edges: visEdges },
             {
               physics: {
                 solver: "forceAtlas2Based",
-                forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.005, springLength: 120 },
-                stabilization: { iterations: 100 },
+                forceAtlas2Based: {
+                  gravitationalConstant: isLarge ? -60 : -40,
+                  centralGravity: 0.01,
+                  springLength: isLarge ? 150 : 120,
+                  damping: 0.8,
+                },
+                stabilization: {
+                  enabled: true,
+                  iterations: isLarge ? 50 : 100,
+                  updateInterval: 50,
+                },
+                adaptiveTimestep: true,
               },
-              interaction: { hover: true, tooltipDelay: 200 },
-              nodes: { borderWidth: 2, shadow: true },
+              interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                hideEdgesOnDrag: isLarge,
+                hideNodesOnDrag: isLarge,
+              },
+              nodes: {
+                borderWidth: 2,
+                shadow: !isLarge,
+                font: { face: "Inter, system-ui, sans-serif" },
+              },
+              edges: {
+                smooth: { enabled: !isLarge, type: "continuous", roundness: 0.5 },
+              },
+              layout: {
+                improvedLayout: !isLarge,
+              },
             }
           );
 

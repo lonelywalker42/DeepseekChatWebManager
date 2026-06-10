@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cardsApi } from "@/lib/api";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Trash2 } from "lucide-react";
 
 export default function CardsPage() {
   const [cards, setCards] = useState<any[]>([]);
@@ -23,6 +23,19 @@ export default function CardsPage() {
     cardsApi.tags().then((t) => setTags(t.map((x: any) => x.name))).catch(() => {});
     fetchCards();
   }, [filter.tag, filter.difficulty]);
+
+  const handleDelete = async (e: React.MouseEvent, cardId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("确定要删除这张知识卡片吗？此操作不可撤销。")) return;
+    try {
+      await cardsApi.delete(cardId);
+      setCards((prev) => prev.filter((c) => c.id !== cardId));
+    } catch (err) {
+      console.error(err);
+      alert("删除失败");
+    }
+  };
 
   const filtered = filter.q
     ? cards.filter((c) => c.title.includes(filter.q) || c.summary?.includes(filter.q))
@@ -82,9 +95,16 @@ export default function CardsPage() {
             <Link
               key={card.id}
               href={`/cards/${card.id}`}
-              className="block bg-zinc-900 border border-zinc-800 rounded-xl p-5 card-hover"
+              className="block bg-zinc-900 border border-zinc-800 rounded-xl p-5 card-hover relative group"
             >
-              <div className="flex items-start justify-between mb-2">
+              <button
+                onClick={(e) => handleDelete(e, card.id)}
+                className="absolute top-3 right-3 p-1.5 rounded-lg bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-900/50"
+                title="删除卡片"
+              >
+                <Trash2 className="w-4 h-4 text-zinc-400 hover:text-red-400" />
+              </button>
+              <div className="flex items-start justify-between mb-2 pr-8">
                 <h3 className="font-semibold text-zinc-200 flex-1">{card.title}</h3>
                 {card.difficulty && diffBadge(card.difficulty)}
               </div>

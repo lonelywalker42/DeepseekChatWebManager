@@ -1,13 +1,35 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { importApi, tasksApi } from "@/lib/api";
 import { Upload, FileText, File, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
+const STORAGE_KEY = "import-results";
+
 export default function ImportPage() {
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<any[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const intervalsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+
+  // Persist results to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(results));
+  }, [results]);
+
+  // Cleanup all intervals on unmount
+  useEffect(() => {
+    return () => {
+      intervalsRef.current.forEach((id) => clearInterval(id));
+      intervalsRef.current.clear();
+    };
+  }, []);
 
   const handleFiles = async (files: FileList | File[]) => {
     for (const file of Array.from(files)) {
@@ -27,15 +49,18 @@ export default function ImportPage() {
               const task = await tasksApi.get(res.task_id);
               if (task.status === "completed") {
                 clearInterval(poll);
+                intervalsRef.current.delete(poll);
                 setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "done", detail: task.progress } : r));
               } else if (task.status === "failed") {
                 clearInterval(poll);
+                intervalsRef.current.delete(poll);
                 setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "error", detail: task.error } : r));
               } else {
                 setResults((prev) => prev.map((r) => r.id === id ? { ...r, detail: task.progress } : r));
               }
-            } catch { clearInterval(poll); }
+            } catch { clearInterval(poll); intervalsRef.current.delete(poll); }
           }, 2000);
+          intervalsRef.current.add(poll);
         }
       } catch (e: any) {
         setResults((prev) => prev.map((r) => r.id === id ? { ...r, status: "error", detail: e.message } : r));

@@ -4,6 +4,12 @@
 
 ## 快速开始
 
+### Windows 一键启动（推荐）
+
+```bash
+start.bat    # 在项目根目录运行，自动安装依赖并启动后端 + 前端
+```
+
 ### 1. 安装依赖
 
 ```bash
@@ -86,6 +92,7 @@ server/
 │   │   ├── app/             # App Router 页面
 │   │   │   ├── page.tsx     # 首页仪表盘
 │   │   │   ├── upload/      # 上传对话
+│   │   │   ├── sessions/    # 会话详情（对话回放）
 │   │   │   ├── cards/       # 卡片浏览 + 详情
 │   │   │   ├── graph/       # 知识图谱可视化
 │   │   │   ├── tags/        # 标签审核
@@ -108,6 +115,20 @@ server/
 - 自动按会话拆分（一个 JSON 文件可含多个对话）
 - **增量更新**：以 `source_url` 为主键，重复上传自动检测新消息
 - 三种结果：新建 / 增量更新 / 跳过
+- **消息持久化**：上传的原始消息自动存储，支持对话回放
+
+### 对话回放
+
+- 会话详情页展示完整对话历史
+- 支持 Markdown 渲染、LaTeX 公式、代码语法高亮
+- 用户/助手消息分角色显示，带头像标识
+- 同时展示该会话生成的知识卡片列表
+
+### 知识卡片管理
+
+- 卡片列表页和详情页支持删除操作
+- 删除时同步清理向量数据库中的嵌入
+- 删除前二次确认，防止误操作
 
 ### AI 处理管道
 
@@ -165,6 +186,7 @@ server/
 | POST | `/api/v1/sessions/upload-file` | 上传 JSON 文件 |
 | GET | `/api/v1/sessions/` | 列出所有会话 |
 | GET | `/api/v1/sessions/{id}` | 获取会话详情 |
+| GET | `/api/v1/sessions/{id}/messages` | 获取会话原始消息（对话回放） |
 | DELETE | `/api/v1/sessions/{id}` | 删除会话及卡片 |
 
 ### 卡片
@@ -218,6 +240,7 @@ server/
 | overall_summary | text | LLM 生成的摘要 |
 | knowledge_domain | JSON | 知识领域列表 |
 | message_count | int | 消息数量 |
+| messages_json | text | JSON 序列化的原始消息（用于对话回放） |
 | processed_at | datetime | 处理完成时间 |
 
 ### Card（知识卡片）

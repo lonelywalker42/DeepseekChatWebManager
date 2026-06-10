@@ -714,6 +714,12 @@ npm run build
 
 **快速启动：**
 
+Windows 一键启动（推荐）：
+```bash
+start.bat    # 自动安装依赖并启动后端 + 前端
+```
+
+手动启动：
 ```bash
 # 后端
 cd server
