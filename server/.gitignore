@@ -4,3 +4,5 @@ __pycache__/
 data/
 *.db
 *.db-journal
+build/
+dist/
