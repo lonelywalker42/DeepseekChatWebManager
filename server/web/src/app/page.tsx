@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { sessionsApi, cardsApi, tagsApi } from "@/lib/api";
-import { BookOpen, MessageSquare, Tags, Globe } from "lucide-react";
+import { BookOpen, MessageSquare, Tags, Globe, Trash2 } from "lucide-react";
 
 export default function Home() {
   const [stats, setStats] = useState({ sessions: 0, cards: 0, tags: 0, domains: 0 });
@@ -22,6 +22,19 @@ export default function Home() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleDeleteSession = async (e: React.MouseEvent, sessionId: string, title: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`确定删除会话「${title}」？\n\n该操作将同时删除该会话下的所有知识卡片，且不可撤销。`)) return;
+    try {
+      await sessionsApi.delete(sessionId);
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      setStats((prev) => ({ ...prev, sessions: prev.sessions - 1 }));
+    } catch (err: any) {
+      alert(`删除失败：${err.message}`);
+    }
+  };
 
   const statCards = [
     { icon: MessageSquare, label: "会话", value: stats.sessions, color: "text-indigo-400" },
@@ -76,8 +89,15 @@ export default function Home() {
         ) : (
           <div className="space-y-2">
             {sessions.map((s) => (
-              <Link key={s.id} href={`/sessions/${s.id}`} className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover">
-                <div className="font-medium text-zinc-200">{s.title}</div>
+              <Link key={s.id} href={`/sessions/${s.id}`} className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover relative group">
+                <button
+                  onClick={(e) => handleDeleteSession(e, s.id, s.title)}
+                  className="absolute top-3 right-3 p-1.5 rounded-lg bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-900/50"
+                  title="删除会话"
+                >
+                  <Trash2 className="w-4 h-4 text-zinc-400 hover:text-red-400" />
+                </button>
+                <div className="font-medium text-zinc-200 pr-8">{s.title}</div>
                 <div className="text-sm text-zinc-500 mt-1">
                   💬 {s.message_count} 条消息 · 🃏 {s.card_count} 张卡片 · 🕐 {s.uploaded_at?.slice(0, 19)}
                 </div>

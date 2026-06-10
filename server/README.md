@@ -86,6 +86,25 @@ setup.bat    # 自动创建 venv、安装依赖、下载模型
 start.bat    # 启动服务
 ```
 
+### 方案三：Portable EXE 分发
+
+构建免安装版本，适合分发给其他用户：
+
+```bash
+cd server
+build_portable.bat    # 构建 portable 版本到 dist/ 目录
+```
+
+构建完成后，`dist/` 目录包含：
+- `start.bat` — 一键启动（首次运行自动创建 venv 并安装依赖）
+- `server/` — 后端代码 + 预构建的前端
+- `README.md` — 使用说明
+
+分发方式：将 `dist/` 目录打包为 zip，用户解压后运行 `start.bat` 即可。
+
+> **注意**：嵌入模型（~500MB）不包含在分发包中，首次运行时自动下载。
+> 用户需确保网络通畅，或手动下载模型放到 `~/.cache/torch/sentence_transformers/` 目录。
+
 ### 方案三：手动部署
 
 ```bash
