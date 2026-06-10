@@ -92,7 +92,7 @@ export default function Home() {
         ) : (
           <div className="space-y-2">
             {sessions.map((s) => (
-              <Link key={s.id} href={`/sessions/${s.id}`} className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover relative group">
+              <Link key={s.id} href={`/sessions/detail?id=${s.id}`} className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover relative group">
                 <button
                   onClick={(e) => handleDeleteSession(e, s.id, s.title)}
                   className="absolute top-3 right-3 p-1.5 rounded-lg bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-900/50"

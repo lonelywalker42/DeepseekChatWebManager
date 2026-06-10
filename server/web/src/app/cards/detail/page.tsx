@@ -1,23 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { cardsApi } from "@/lib/api";
 import { ArrowLeft, Copy, Check, Trash2 } from "lucide-react";
 
 export default function CardDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
   const router = useRouter();
   const [card, setCard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) return;
     cardsApi.get(id).then(setCard).catch(console.error).finally(() => setLoading(false));
   }, [id]);
 
   const handleDelete = async () => {
+    if (!id) return;
     if (!confirm("确定要删除这张知识卡片吗？此操作不可撤销。")) return;
     try {
       await cardsApi.delete(id);
@@ -34,6 +37,7 @@ export default function CardDetailPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  if (!id) return <div className="text-center text-zinc-500 py-12">缺少卡片 ID</div>;
   if (loading) return <div className="text-center text-zinc-500 py-12">加载中...</div>;
   if (!card) return <div className="text-center text-zinc-500 py-12">卡片未找到</div>;
 
@@ -74,6 +78,14 @@ export default function CardDetailPage() {
         </div>
         {card.category_path && (
           <div className="text-sm text-zinc-600 mt-3">📁 {card.category_path}</div>
+        )}
+        {card.session_id && (
+          <Link
+            href={`/sessions/detail?id=${card.session_id}`}
+            className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-indigo-400 mt-3 transition-colors"
+          >
+            📋 查看所属会话
+          </Link>
         )}
       </div>
 
@@ -119,7 +131,7 @@ export default function CardDetailPage() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-zinc-200 mb-3">🔗 版本关联</h2>
           <p className="text-zinc-400">此卡片有历史版本</p>
-          <Link href={`/cards/${card.parent_version_id}`} className="text-indigo-400 hover:underline text-sm mt-2 inline-block">
+          <Link href={`/cards/detail?id=${card.parent_version_id}`} className="text-indigo-400 hover:underline text-sm mt-2 inline-block">
             查看历史版本 →
           </Link>
         </div>

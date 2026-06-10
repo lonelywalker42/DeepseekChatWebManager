@@ -94,7 +94,7 @@ export default function CardsPage() {
           {filtered.map((card) => (
             <Link
               key={card.id}
-              href={`/cards/${card.id}`}
+              href={`/cards/detail?id=${card.id}`}
               className="block bg-zinc-900 border border-zinc-800 rounded-xl p-5 card-hover relative group"
             >
               <button
@@ -119,7 +119,7 @@ export default function CardsPage() {
               )}
               {card.session_id && (
                 <Link
-                  href={`/sessions/${card.session_id}`}
+                  href={`/sessions/detail?id=${card.session_id}`}
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-indigo-400 mt-1.5 transition-colors"
                 >

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { sessionsApi, cardsApi } from "@/lib/api";
 import { ArrowLeft, User, Bot, BookOpen, Sparkles } from "lucide-react";
@@ -12,7 +12,8 @@ import rehypeHighlight from "rehype-highlight";
 import "katex/dist/katex.min.css";
 
 export default function SessionDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
   const [session, setSession] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [cards, setCards] = useState<any[]>([]);
@@ -20,6 +21,7 @@ export default function SessionDetailPage() {
   const [tab, setTab] = useState<"conversation" | "cards">("conversation");
 
   useEffect(() => {
+    if (!id) return;
     Promise.all([
       sessionsApi.get(id),
       sessionsApi.messages(id),
@@ -34,14 +36,15 @@ export default function SessionDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  if (!id) return <div className="text-center text-zinc-500 py-12">缺少会话 ID</div>;
   if (loading) return <div className="text-center text-zinc-500 py-12">加载中...</div>;
   if (!session) return <div className="text-center text-zinc-500 py-12">会话未找到</div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back */}
-      <Link href="/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300">
-        <ArrowLeft className="w-4 h-4" /> 返回仪表盘
+      <Link href="/sessions" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300">
+        <ArrowLeft className="w-4 h-4" /> 返回会话列表
       </Link>
 
       {/* Header */}
@@ -153,7 +156,7 @@ export default function SessionDetailPage() {
             cards.map((card) => (
               <Link
                 key={card.id}
-                href={`/cards/${card.id}`}
+                href={`/cards/detail?id=${card.id}`}
                 className="block bg-zinc-900 border border-zinc-800 rounded-xl p-5 card-hover"
               >
                 <div className="flex items-start justify-between mb-2">
