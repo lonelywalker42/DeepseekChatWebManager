@@ -8,7 +8,7 @@ from pathlib import Path
 block_cipher = None
 
 # Paths
-server_dir = os.path.dirname(os.path.abspath(SPECPATH))
+server_dir = os.path.abspath(SPECPATH)
 web_out_dir = os.path.join(server_dir, 'web', 'out')
 
 a = Analysis(
