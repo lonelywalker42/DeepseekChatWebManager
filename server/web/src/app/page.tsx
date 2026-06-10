@@ -9,6 +9,7 @@ export default function Home() {
   const [stats, setStats] = useState({ sessions: 0, cards: 0, tags: 0, domains: 0 });
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([sessionsApi.list(), cardsApi.list({ limit: "200" }), tagsApi.list()])
@@ -18,7 +19,7 @@ export default function Home() {
         setStats({ sessions: s.length, cards: c.length, tags: t.length, domains: domains.size });
         setSessions(s.slice(0, 5));
       })
-      .catch(console.error)
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -28,6 +29,26 @@ export default function Home() {
     { icon: Tags, label: "标签", value: stats.tags, color: "text-pink-400" },
     { icon: Globe, label: "知识领域", value: stats.domains, color: "text-cyan-400" },
   ];
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="bg-gradient-to-br from-zinc-900 via-indigo-950/30 to-zinc-900 rounded-2xl p-8 border border-zinc-800">
+          <h1 className="text-3xl font-bold text-zinc-100 mb-2">🧠 DeepSeek 知识库</h1>
+          <p className="text-zinc-400 text-lg">AI 驱动的个人知识管理系统</p>
+        </div>
+        <div className="bg-zinc-900 border border-red-800/50 rounded-xl p-8 text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-zinc-200 mb-2">无法连接后端服务</h2>
+          <p className="text-zinc-400 mb-4">{error}</p>
+          <p className="text-sm text-zinc-500">请先启动后端服务：运行 <code className="bg-zinc-800 px-2 py-1 rounded text-indigo-400">start.bat</code> 或手动执行：</p>
+          <pre className="bg-zinc-950 border border-zinc-800 rounded-lg p-4 mt-3 text-sm text-zinc-300 text-left inline-block">
+            cd server{'\n'}python -m uvicorn main:app --reload --port 8000
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
