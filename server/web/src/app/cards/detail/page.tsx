@@ -1,12 +1,22 @@
 "use client";
 
+import { Suspense } from "react";
+
+export default function CardDetailPageWrapper() {
+  return (
+    <Suspense fallback={<div className="text-center text-zinc-500 py-12">加载中...</div>}>
+      <CardDetailPage />
+    </Suspense>
+  );
+}
+
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { cardsApi } from "@/lib/api";
 import { ArrowLeft, Copy, Check, Trash2 } from "lucide-react";
 
-export default function CardDetailPage() {
+function CardDetailPage() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const router = useRouter();

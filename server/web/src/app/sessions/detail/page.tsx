@@ -1,5 +1,15 @@
 "use client";
 
+import { Suspense } from "react";
+
+export default function SessionDetailPageWrapper() {
+  return (
+    <Suspense fallback={<div className="text-center text-zinc-500 py-12">加载中...</div>}>
+      <SessionDetailPage />
+    </Suspense>
+  );
+}
+
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -11,7 +21,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import "katex/dist/katex.min.css";
 
-export default function SessionDetailPage() {
+function SessionDetailPage() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const [session, setSession] = useState<any>(null);
