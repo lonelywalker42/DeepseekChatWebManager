@@ -69,8 +69,8 @@ app.include_router(chat_router)
 def _get_static_dir() -> Path | None:
     """Get the static files directory (Next.js export output)."""
     if getattr(sys, 'frozen', False):
-        # PyInstaller EXE: static files are bundled in _MEIPASS
-        base = Path(sys._MEIPASS)
+        # PyInstaller EXE: static files are bundled under 'static/' in _MEIPASS
+        base = Path(sys._MEIPASS) / "static"
     else:
         # Development: static files are in server/web/out
         base = Path(__file__).parent / "web" / "out"
@@ -88,16 +88,6 @@ if _static_dir:
 def health_check():
     """Health check endpoint for the Chrome extension to detect service status."""
     return {"status": "ok", "version": "0.1.0"}
-
-
-@app.get("/")
-def root():
-    return {
-        "name": "DeepSeek Knowledge Base",
-        "version": "0.1.0",
-        "docs": "/docs",
-        "health": "/health",
-    }
 
 
 if __name__ == "__main__":
