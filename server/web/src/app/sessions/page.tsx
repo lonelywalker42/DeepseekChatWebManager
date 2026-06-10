@@ -107,15 +107,13 @@ export default function SessionsPage() {
                 className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 card-hover relative group"
               >
                 <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {noSummary && (
-                    <button
-                      onClick={(e) => handleSummarize(e, s.id)}
-                      className="p-1.5 rounded-lg bg-zinc-800 hover:bg-indigo-900/50 transition-colors"
-                      title="生成摘要"
-                    >
-                      <Sparkles className="w-4 h-4 text-indigo-400" />
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => handleSummarize(e, s.id)}
+                    className="p-1.5 rounded-lg bg-zinc-800 hover:bg-indigo-900/50 transition-colors"
+                    title={noSummary ? "生成摘要" : "重新生成摘要"}
+                  >
+                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                  </button>
                   {isFailed && (
                     <button
                       onClick={(e) => handleRetry(e, s.id)}

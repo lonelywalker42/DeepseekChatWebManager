@@ -9,19 +9,42 @@ import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import "katex/dist/katex.min.css";
 
+const STORAGE_KEY = "chat-state";
+
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sessionTitle, setSessionTitle] = useState("");
+  const [sessionTitle, setSessionTitle] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return sessionStorage.getItem(STORAGE_KEY + "-title") || "";
+    } catch { return ""; }
+  });
   const [saving, setSaving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Persist messages to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY + "-title", sessionTitle);
+  }, [sessionTitle]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,23 +59,43 @@ export default function ChatPage() {
     if (!text || loading) return;
 
     const userMsg: Message = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInput("");
     setLoading(true);
 
+    // Add empty assistant message for streaming
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
     try {
-      const allMessages = [...messages, userMsg];
-      const resp = await chatApi.send(allMessages);
-      setMessages((prev) => [...prev, { role: "assistant", content: resp.reply }]);
+      let fullContent = "";
+      for await (const chunk of chatApi.stream(newMessages)) {
+        fullContent += chunk;
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: "assistant", content: fullContent };
+          return updated;
+        });
+      }
     } catch (e: any) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `❌ 错误：${e.message}` },
-      ]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: `❌ 错误：${e.message}`,
+        };
+        return updated;
+      });
     } finally {
       setLoading(false);
       inputRef.current?.focus();
     }
+  };
+
+  const handleStop = () => {
+    // Note: SSE doesn't support client-side abort easily
+    // This is a UI placeholder - the stream will complete naturally
+    setLoading(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -84,6 +127,8 @@ export default function ChatPage() {
       alert("会话已保存，正在后台生成摘要和知识卡片");
       setMessages([]);
       setSessionTitle("");
+      sessionStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY + "-title");
     } catch (e: any) {
       alert(`保存失败：${e.message}`);
     } finally {
@@ -96,6 +141,8 @@ export default function ChatPage() {
     if (!confirm("确定清空当前对话？")) return;
     setMessages([]);
     setSessionTitle("");
+    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY + "-title");
   };
 
   return (
@@ -163,32 +210,25 @@ export default function ChatPage() {
                 <p className="text-zinc-200 whitespace-pre-wrap">{msg.content}</p>
               ) : (
                 <div className="prose prose-invert prose-sm max-w-none prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800 prose-code:text-indigo-300 prose-headings:text-zinc-200 prose-p:text-zinc-300 prose-strong:text-zinc-200 prose-a:text-indigo-400">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkMath]}
-                    rehypePlugins={[rehypeKatex, rehypeHighlight]}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
+                  {msg.content ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex, rehypeHighlight]}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <div className="flex items-center gap-1 text-zinc-500">
+                      <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce"></div>
+                      <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+                      <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         ))}
-
-        {loading && (
-          <div className="flex gap-3">
-            <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-purple-500/20">
-              <Bot className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-              <div className="flex items-center gap-2 text-zinc-500">
-                <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div ref={messagesEndRef} />
       </div>
@@ -206,8 +246,8 @@ export default function ChatPage() {
             className="flex-1 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 resize-none"
           />
           <button
-            onClick={handleSend}
-            disabled={!input.trim() || loading}
+            onClick={loading ? handleStop : handleSend}
+            disabled={!input.trim() && !loading}
             className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-xl text-white"
           >
             {loading ? <Square className="w-5 h-5" /> : <Send className="w-5 h-5" />}

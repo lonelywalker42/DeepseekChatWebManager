@@ -102,4 +102,38 @@ export const chatApi = {
       method: "POST",
       body: JSON.stringify({ messages, system_prompt: systemPrompt }),
     }),
+  stream: async function* (messages: { role: string; content: string }[], systemPrompt?: string) {
+    const res = await fetch(`${API_BASE}/api/v1/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages, system_prompt: systemPrompt }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") return;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) throw new Error(parsed.error);
+            if (parsed.content) yield parsed.content;
+          } catch (e: any) {
+            if (e.message && !e.message.includes("JSON")) throw e;
+          }
+        }
+      }
+    }
+  },
 };
