@@ -104,7 +104,7 @@ export default function GraphPage() {
 
       networkRef.current = new Network(
         containerRef.current!,
-        { nodes: visNodes, edges: visEdges },
+        { nodes: visNodes as any, edges: visEdges as any },
         {
           physics: {
             solver: "forceAtlas2Based",
@@ -151,13 +151,14 @@ export default function GraphPage() {
       networkRef.current.on("click", (params: any) => {
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0];
-          const node = visNodes.get(nodeId);
+          const nodeArr = visNodes.get(nodeId) as any;
+          const node = Array.isArray(nodeArr) ? nodeArr[0] : nodeArr;
           if (node) {
-            visNodes.update({ id: nodeId, label: node.fullLabel || node.label });
+            visNodes.update({ id: nodeId, label: node.fullLabel || node.label } as any);
             setTimeout(() => {
               const label = node.fullLabel || node.label;
-              if (label.length > 15) {
-                visNodes.update({ id: nodeId, label: label.slice(0, 15) + "..." });
+              if (label && label.length > 15) {
+                visNodes.update({ id: nodeId, label: label.slice(0, 15) + "..." } as any);
               }
             }, 3000);
           }
