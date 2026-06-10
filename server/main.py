@@ -1,10 +1,14 @@
 """FastAPI application entry point for the knowledge base server."""
 
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from models.database import init_db
 from api.sessions import router as sessions_router
@@ -59,6 +63,25 @@ app.include_router(graph_router)
 app.include_router(import_router)
 app.include_router(settings_router)
 app.include_router(chat_router)
+
+
+# ── Static file serving (for bundled EXE mode) ──────────────
+def _get_static_dir() -> Path | None:
+    """Get the static files directory (Next.js export output)."""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller EXE: static files are bundled in _MEIPASS
+        base = Path(sys._MEIPASS)
+    else:
+        # Development: static files are in server/web/out
+        base = Path(__file__).parent / "web" / "out"
+    return base if base.exists() else None
+
+
+_static_dir = _get_static_dir()
+if _static_dir:
+    # Serve Next.js static export — must be AFTER all API routes
+    app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="static")
+    logger.info("Serving static frontend from: %s", _static_dir)
 
 
 @app.get("/health")
