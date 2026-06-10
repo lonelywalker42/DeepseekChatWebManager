@@ -67,7 +67,16 @@ export default function TagsPage() {
     });
     if (toConfirm.length === 0) return;
     if (!confirm(`确定批量确认 ${toConfirm.length} 个标签？`)) return;
-    await Promise.all(toConfirm.map((name) => tagsApi.confirm(name)));
+    try {
+      const results = await Promise.allSettled(toConfirm.map((name) => tagsApi.confirm(name)));
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+        alert(`完成：${succeeded} 个成功，${failed} 个失败`);
+      }
+    } catch (e: any) {
+      alert(`操作失败：${e.message}`);
+    }
     setSelected(new Set());
     refresh();
   };
@@ -76,7 +85,16 @@ export default function TagsPage() {
     const toDelete = Array.from(selected);
     if (toDelete.length === 0) return;
     if (!confirm(`确定批量删除 ${toDelete.length} 个标签？此操作不可撤销。`)) return;
-    await Promise.all(toDelete.map((name) => tagsApi.delete(name)));
+    try {
+      const results = await Promise.allSettled(toDelete.map((name) => tagsApi.delete(name)));
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+        alert(`完成：${succeeded} 个成功，${failed} 个失败`);
+      }
+    } catch (e: any) {
+      alert(`操作失败：${e.message}`);
+    }
     setSelected(new Set());
     refresh();
   };
