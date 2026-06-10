@@ -156,16 +156,21 @@ python -m streamlit run streamlit_app/app.py
 - 增量更新
 
 ### Phase 2 ✅ 完整知识库
-- Next.js 前端（卡片流、详情、图谱、标签审核、文档导入）
-- 知识图谱 API（节点/边/邻居查询）+ 自适应性能优化
-- 标签审核 API（确认/合并/删除）
+- Next.js 前端（卡片流、详情、图谱、标签审核、文档导入、AI 对话）
+- 知识图谱 API（节点/边/邻居查询）+ 自适应性能优化 + 节点类型筛选
+- 标签审核 API（确认/合并/删除）+ 全选批量操作
 - 外部文档导入（MD/PDF/TXT）
 - 任务持久化
 - LLM 配置可替换
+- 会话管理（列表、删除、重试、手动生成摘要）
 - 会话详情页（对话回放，支持 Markdown/LaTeX/代码高亮）
-- 知识卡片删除功能
+- 知识卡片删除 + 跳转会话功能
+- AI 对话页面（调用 LLM，结束后保存为会话生成摘要和卡片）
+- 上传对话批处理（限制10并发，显示进度）
 - 导入页面状态持久化（sessionStorage）
-- Windows 一键启动脚本（start.bat）
+- Windows 一键启动脚本（start.bat / setup.bat）
+- Portable EXE 分发方案（build_portable.bat）
+- Docker 部署方案
 - 数据库自动迁移（新增 messages_json 列）
 
 ### Phase 3 计划

@@ -62,19 +62,23 @@ FastAPI REST API + AI 处理管道。核心模块：
 - `services/pipeline.py` — 完整处理管道 + 任务持久化
 - `services/embedding.py` — 向量嵌入（bge-small-zh，带降级）
 - `services/import_service.py` — 外部文档解析（MD/PDF/TXT）
-- `api/sessions.py` — 去重 + 增量更新（以 source_url 为主键）
+- `api/sessions.py` — 去重 + 增量更新 + 重试 + 摘要生成
+- `api/chat.py` — AI 对话 API（调用 LLM）
 - `api/settings.py` — LLM 配置管理（运行时可修改）
 
 存储：SQLite（sessions, cards, tags, tasks）+ ChromaDB（向量）
 
 #### 前端 (`server/web/`)
-Next.js 14 App Router + Tailwind CSS。页面：
-- `/` — 仪表盘
-- `/upload` — 上传对话（DeepSeek JSON）
-- `/cards` — 卡片浏览 + `/cards/[id]` 详情
-- `/graph` — 知识图谱（vis-network）
-- `/tags` — 标签审核
-- `/import` — 文档导入
+Next.js 16 App Router + Tailwind CSS。页面：
+- `/` — 仪表盘（统计卡片可点击跳转）
+- `/chat` — AI 对话（调用 LLM API，结束后保存为会话）
+- `/upload` — 上传对话（DeepSeek JSON，批量处理限制10并发）
+- `/sessions` — 会话管理（列表、删除、重试、生成摘要）
+- `/sessions/[id]` — 会话详情（对话回放 + 知识卡片）
+- `/cards` — 卡片浏览 + `/cards/[id]` 详情（可跳转会话）
+- `/graph` — 知识图谱（vis-network，节点类型筛选）
+- `/tags` — 标签审核（全选、批量确认/删除/合并）
+- `/import` — 文档导入（状态持久化）
 - `/settings` — LLM 配置
 
 ## Data Flow
