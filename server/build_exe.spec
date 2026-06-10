@@ -32,6 +32,7 @@ a = Analysis(
         'uvicorn.protocols.websockets.auto',
         'uvicorn.lifespan',
         'uvicorn.lifespan.on',
+        'python_multipart',
         'chromadb',
         'chromadb.api',
         'chromadb.db',
